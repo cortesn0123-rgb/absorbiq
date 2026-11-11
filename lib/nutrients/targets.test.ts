@@ -126,7 +126,7 @@ describe("getDailyTargets", () => {
     it("labels sodium, saturated fat, added sugars and cholesterol as limits", () => {
       expect(t.sodium).toMatchObject({ kind: "limit", value: 2300 });
       expect(t.saturated_fat).toMatchObject({ kind: "limit", value: 20 });
-      expect(t.added_sugars).toMatchObject({ kind: "limit", value: 50 });
+      expect(t.added_sugars).toMatchObject({ kind: "limit", value: 50, per: "day" });
       expect(t.cholesterol).toMatchObject({ kind: "limit", value: 300 });
     });
 
@@ -154,9 +154,16 @@ describe("getDailyTargets", () => {
       expect(t.fat).toMatchObject({ value: 96, min: 69, max: 122 });
     });
 
-    it("sets saturated fat and added sugars limits at 10% of energy", () => {
-      expect(t.saturated_fat).toMatchObject({ kind: "limit", value: 35 });
-      expect(t.added_sugars).toMatchObject({ kind: "limit", value: 78 });
+    it("limits saturated fat to 10% of energy per day (DGA 2025–2030)", () => {
+      expect(t.saturated_fat).toMatchObject({ kind: "limit", value: 35, per: "day" });
+    });
+
+    it("limits added sugars to 10 g per meal (DGA 2025–2030)", () => {
+      expect(t.added_sugars).toMatchObject({ kind: "limit", value: 10, per: "meal" });
+      expect(getDailyTargets({ ...man, tier: "athletic" }).added_sugars).toMatchObject({
+        value: 10,
+        per: "meal",
+      });
     });
 
     it("uses DRIs by sex, age and life stage", () => {

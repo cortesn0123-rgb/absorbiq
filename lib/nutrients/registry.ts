@@ -51,13 +51,15 @@ export type ComputedRule =
   | "fat-amdr"
   | "fat-athletic"
   | "sat-fat-10pct"
-  | "added-sugars-10pct"
   | "water-athletic"
   | "sodium-athletic";
 
+/** Period a target or limit applies to. Almost everything is per day. */
+export type Period = "day" | "meal";
+
 export type TierValue =
-  /** One value for every adult (FDA Daily Values). */
-  | { type: "fixed"; value: number; basis: string; note?: string }
+  /** One value for every adult (e.g. FDA Daily Values). `per` defaults to "day". */
+  | { type: "fixed"; value: number; per?: Period; basis: string; note?: string }
   /** Value looked up by sex, age and life stage. */
   | { type: "dri"; table: DriTable; basis: "RDA" | "AI" | "CDRR"; note?: string }
   /** Value calculated from the user's profile. */
@@ -163,7 +165,7 @@ const DRI_WATER = "NASEM, DRIs for Water, Potassium, Sodium, Chloride, and Sulfa
 const DRI_MACRO =
   "NASEM, DRIs for Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Cholesterol, Protein, and Amino Acids (2002/2005)";
 const DRI_ENERGY = "NASEM, Dietary Reference Intakes for Energy (2023)";
-const DGA = "USDA/HHS, Dietary Guidelines for Americans 2020–2025";
+const DGA = "USDA/HHS, Dietary Guidelines for Americans 2025–2030 (January 2026)";
 const SPORTS =
   "Thomas DT, Erdman KA, Burke LM. ACSM/AND/DC joint position: Nutrition and Athletic Performance. Med Sci Sports Exerc. 2016;48(3):543-568";
 
@@ -208,6 +210,15 @@ function teenAdult(teen: number, adult: number): DriTable {
 function fda(value: number, note?: string): TierValue {
   return { type: "fixed", value, basis: "FDA Daily Value", note };
 }
+
+/** DGA 2025–2030: avoid added sugars; when eaten, no more than 10 g per meal. */
+const DGA_ADDED_SUGARS: TierValue = {
+  type: "fixed",
+  value: 10,
+  per: "meal",
+  basis: "At most 10 g per meal (Dietary Guidelines 2025–2030)",
+  note: "The Dietary Guidelines advise avoiding added sugars; when eaten, keep each meal at or under 10 g.",
+};
 
 const ATHLETIC_MICRO_NOTE =
   "Athletic tier uses the Average DRI: sports-nutrition position stands do not set higher micronutrient targets for athletes.";
@@ -851,12 +862,12 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
     kind: "limit",
     tiers: {
       fda: fda(50),
-      average: { type: "computed", rule: "added-sugars-10pct", basis: "Less than 10% of energy" },
-      athletic: { type: "computed", rule: "added-sugars-10pct", basis: "Less than 10% of energy" },
+      average: DGA_ADDED_SUGARS,
+      athletic: DGA_ADDED_SUGARS,
     },
     ul: null,
     citation: `${DGA}; ${FDA_DV}`,
-    note: "Few FDC foods report added sugars; branded foods usually do.",
+    note: "Few FDC foods report added sugars; branded foods usually do. The FDA tier keeps the 50 g/day Daily Value.",
   },
   fat: {
     id: "fat",

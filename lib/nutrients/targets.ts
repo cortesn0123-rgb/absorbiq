@@ -14,6 +14,7 @@ import {
   type LifeStage,
   type NutrientId,
   type NutrientKind,
+  type Period,
   type Sex,
   type Tier,
   type Unit,
@@ -51,8 +52,10 @@ export interface DailyTarget {
   nutrientId: NutrientId;
   unit: Unit;
   kind: NutrientKind;
-  /** Target (or limit) per day; null when no authority sets a number for this tier. */
+  /** Target or limit for one `per` period; null when no authority sets a number for this tier. */
   value: number | null;
+  /** "meal" limits are checked against each meal's total (see meal-limits.ts), not the day's. */
+  per: Period;
   min?: number;
   max?: number;
   /** Tolerable upper intake level for this life stage, or null. */
@@ -320,7 +323,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
 
   function computed(
     rule: ComputedRule,
-  ): Omit<DailyTarget, "nutrientId" | "unit" | "kind" | "ul" | "ulScope" | "basis"> {
+  ): Omit<DailyTarget, "nutrientId" | "unit" | "kind" | "per" | "ul" | "ulScope" | "basis"> {
     switch (rule) {
       case "eer":
       case "eer-athletic":
@@ -390,8 +393,6 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
 
       case "sat-fat-10pct":
         return { value: round((0.1 * E) / 9), notes: [] };
-      case "added-sugars-10pct":
-        return { value: round((0.1 * E) / 4), notes: [] };
 
       case "water-athletic": {
         const ai = lookupDri(waterTable(), input.sex, input.age, lifeStage);
@@ -428,6 +429,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
       nutrientId: id,
       unit: def.unit,
       kind: def.kind,
+      per: "day" as Period,
       ul,
       ulScope: def.ul?.scope ?? null,
     };
@@ -437,6 +439,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
         result[id] = {
           ...base,
           value: tierValue.value,
+          per: tierValue.per ?? "day",
           basis: tierValue.basis,
           notes: tierValue.note ? [tierValue.note] : [],
         };

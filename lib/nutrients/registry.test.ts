@@ -69,6 +69,8 @@ describe("nutrient registry", () => {
       switch (v.type) {
         case "fixed":
           expect(v.value).toBeGreaterThan(0);
+          // Only added sugars uses a per-meal limit.
+          if (v.per === "meal") expect(n.id).toBe("added_sugars");
           break;
         case "dri":
           for (const x of allValues(v.table)) {
