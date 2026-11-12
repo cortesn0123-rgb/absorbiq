@@ -21,3 +21,13 @@ export async function requireUser(): Promise<CurrentUser> {
   if (!claims?.sub) redirect("/login");
   return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
 }
+
+/**
+ * For Server Actions and Route Handlers, which cannot rely on a page's check: returns a
+ * Supabase client for the signed-in user, or null when signed out.
+ */
+export async function getSignedInClient() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims?.sub ? supabase : null;
+}

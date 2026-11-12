@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
 
 /** Routes that require a signed-in user. */
-const PROTECTED_PREFIXES = ["/dashboard"];
+const PROTECTED_PREFIXES = ["/dashboard", "/log"];
 
 /**
  * Refreshes the Supabase session cookie on every request and does an optimistic redirect for

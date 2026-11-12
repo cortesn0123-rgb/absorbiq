@@ -1,0 +1,111 @@
+/**
+ * Food tag rules, applied once when a food is first cached (see tags.ts). Edit this file to
+ * change how foods are tagged; foods already cached keep their tags.
+ *
+ * Patterns are matched case-insensitively against the food's FDC category and description.
+ * Category names differ by data type: Foundation/SR Legacy ("Beef Products"), Survey/WWEIA
+ * ("Chicken, whole pieces") and Branded ("Frozen Fish & Seafood").
+ */
+
+/** Same values as the foods.phytate_level / oxalate_level columns. */
+export type TagLevel = "none" | "low" | "medium" | "high";
+
+export interface LevelRule {
+  level: TagLevel;
+  /** Any match assigns `level`... */
+  include: RegExp[];
+  /** ...unless one of these also matches; later rules are then tried. */
+  exclude?: RegExp[];
+}
+
+export interface TagRules {
+  /** Meat, poultry, fish and seafood: sources of heme iron. */
+  heme: { include: RegExp[]; exclude: RegExp[] };
+  /** Phytate (inhibits iron, zinc and calcium absorption). First matching rule wins. */
+  phytate: LevelRule[];
+  /** Oxalate (inhibits calcium absorption). First matching rule wins. */
+  oxalate: LevelRule[];
+  /** Foods with added vitamins or minerals. */
+  fortified: {
+    /** Matched against a branded food's ingredient list. */
+    brandedIngredients: RegExp[];
+    /** Matched against any food's description, e.g. SR Legacy "..., fortified". */
+    description: RegExp[];
+    exclude: RegExp[];
+  };
+}
+
+export const TAG_RULES: TagRules = {
+  heme: {
+    include: [
+      /\b(beef|veal|pork|ham|lamb|mutton|goat|venison|bison|game|meats?)\b/i,
+      /\b(poultry|chicken|turkey|duck|goose|quail)\b/i,
+      /\b(fish|finfish|seafood|shellfish|salmon|tuna|cod|tilapia|sardines?|anchov(y|ies)|mackerel|trout|halibut|herring|pollock|catfish|haddock)\b/i,
+      /\b(shrimp|prawns?|crab|lobster|clams?|mussels?|oysters?|scallops?|squid|octopus|crayfish)\b/i,
+      /\b(liver|organ meats?|sausages?|bacon|frankfurters?|hot dogs?|salami|pepperoni|cold cuts|jerky)\b/i,
+      /\b(hamburgers?|cheeseburgers?|meatballs?|meatloaf)\b/i,
+    ],
+    exclude: [
+      /\b(vegetarian|vegan|meatless|plant[- ]based|meat substitutes?|imitation|analog)\b/i,
+      /\b(flavou?r(ed)?|broth|bouillon|stock|gravy|sauce|fish oil)\b/i,
+      /\b(veggie|nut meats?|coconut meat)\b/i,
+    ],
+  },
+  phytate: [
+    {
+      // Oils and fermented soy sauce carry essentially no phytate, whatever plant they come from.
+      level: "none",
+      include: [/\boils?\b/i, /\bsoy sauce\b/i],
+    },
+    {
+      level: "high",
+      include: [
+        /\blegumes?\b/i,
+        /\b(beans?|lentils?|chickpeas?|garbanzo|split peas?|black[- ]eyed peas?|soy(beans?)?|tofu|tempeh|edamame|hummus)\b/i,
+        /\b(nuts?|almonds?|walnuts?|cashews?|pecans?|pistachios?|peanuts?|hazelnuts?|macadamia|brazil nuts?)\b/i,
+        /\b(seeds?|sesame|tahini|flaxseed|flax|chia|hemp|sunflower|pumpkin seeds?)\b/i,
+        /\bbran\b/i,
+      ],
+      // Fresh pods and sweets named after beans are low in phytate.
+      // SR Legacy puts the noun first ("Beans, snap, green"), so match both orders.
+      exclude: [
+        /\b(green|snap|string|wax|jelly|coffee|vanilla) beans?\b/i,
+        /\bbeans?, (snap|green|string|wax)\b/i,
+        /\bbean sprouts\b/i,
+      ],
+    },
+    {
+      level: "medium",
+      include: [
+        /\bwhole[- ]?(wheat|grains?)\b/i,
+        /\b(brown|wild) rice\b|\brice, (brown|wild)\b/i,
+        /\b(oats?|oatmeal|quinoa|barley|buckwheat|millet|rye|bulgur|sorghum|amaranth|teff|spelt|farro|granola|muesli|popcorn)\b/i,
+      ],
+    },
+    {
+      level: "low",
+      include: [
+        /\b(cereal grains|baked products|breakfast cereals?|yeast breads|pasta|noodles?)\b/i,
+        /\b(bread|bagels?|rolls?|tortillas?|crackers?|rice|flour|corn|cornmeal|grits|couscous)\b/i,
+      ],
+    },
+  ],
+  oxalate: [
+    {
+      level: "high",
+      include: [/\b(spinach|chard|beet greens|rhubarb)\b/i],
+    },
+  ],
+  fortified: {
+    brandedIngredients: [
+      /\b(fortified|enriched)\b/i,
+      /\bvitamins? (a|b\d{1,2}|c|d\d?|e|k\d?)\b/i,
+      /\b(folic acid|thiamin(e)? (mononitrate|hydrochloride)|riboflavin|niacin(amide)?|pyridoxine|cyanocobalamin|biotin|pantothen(ic acid|ate))\b/i,
+      /\b(retinyl palmitate|beta[- ]carotene|cholecalciferol|ergocalciferol|tocopheryl acetate|phylloquinone)\b/i,
+      /\b(reduced iron|electrolytic iron|ferrous \w+|ferric \w+|zinc (oxide|sulfate|gluconate|citrate))\b/i,
+      /\b(calcium carbonate|tricalcium phosphate|calcium citrate|potassium iodide|magnesium oxide|sodium selenite|chromium (chloride|picolinate)|copper gluconate|cupric \w+|manganese sulfate)\b/i,
+    ],
+    description: [/\b(fortified|enriched)\b/i],
+    exclude: [/\b(not|un)[- ]?(fortified|enriched)\b/i],
+  },
+};

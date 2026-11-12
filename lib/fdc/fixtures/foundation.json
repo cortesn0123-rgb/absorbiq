@@ -1,0 +1,193 @@
+{
+  "fdcId": 2644283,
+  "description": "Lentils, dry",
+  "dataType": "Foundation",
+  "foodCategory": {
+    "description": "Legumes and Legume Products"
+  },
+  "foodPortions": [
+    {
+      "amount": 1,
+      "gramWeight": 35,
+      "sequenceNumber": 1,
+      "measureUnit": {
+        "name": "RACC"
+      }
+    }
+  ],
+  "foodNutrients": [
+    {
+      "nutrient": {
+        "number": "951",
+        "name": "Proximates",
+        "unitName": "g"
+      }
+    },
+    {
+      "nutrient": {
+        "number": "255",
+        "name": "Water",
+        "unitName": "g"
+      },
+      "amount": 9.451
+    },
+    {
+      "nutrient": {
+        "number": "957",
+        "name": "Energy (Atwater General Factors)",
+        "unitName": "kcal"
+      },
+      "amount": 360.285
+    },
+    {
+      "nutrient": {
+        "number": "958",
+        "name": "Energy (Atwater Specific Factors)",
+        "unitName": "kcal"
+      },
+      "amount": 350.9328
+    },
+    {
+      "nutrient": {
+        "number": "202",
+        "name": "Nitrogen",
+        "unitName": "g"
+      },
+      "amount": 3.771
+    },
+    {
+      "nutrient": {
+        "number": "203",
+        "name": "Protein",
+        "unitName": "g"
+      },
+      "amount": 23.56875
+    },
+    {
+      "nutrient": {
+        "number": "204",
+        "name": "Total lipid (fat)",
+        "unitName": "g"
+      },
+      "amount": 1.925
+    },
+    {
+      "nutrient": {
+        "number": "207",
+        "name": "Ash",
+        "unitName": "g"
+      },
+      "amount": 2.884
+    },
+    {
+      "nutrient": {
+        "number": "956",
+        "name": "Carbohydrates",
+        "unitName": "g"
+      }
+    },
+    {
+      "nutrient": {
+        "number": "205",
+        "name": "Carbohydrate, by difference",
+        "unitName": "g"
+      },
+      "amount": 62.17125
+    },
+    {
+      "nutrient": {
+        "number": "209",
+        "name": "Starch",
+        "unitName": "g"
+      },
+      "amount": 37.13
+    },
+    {
+      "nutrient": {
+        "number": "283",
+        "name": "Resistant starch",
+        "unitName": "g"
+      },
+      "amount": 16
+    },
+    {
+      "nutrient": {
+        "number": "300",
+        "name": "Minerals",
+        "unitName": "mg"
+      }
+    },
+    {
+      "nutrient": {
+        "number": "301",
+        "name": "Calcium, Ca",
+        "unitName": "mg"
+      },
+      "amount": 61.85
+    },
+    {
+      "nutrient": {
+        "number": "303",
+        "name": "Iron, Fe",
+        "unitName": "mg"
+      },
+      "amount": 7.158
+    },
+    {
+      "nutrient": {
+        "number": "304",
+        "name": "Magnesium, Mg",
+        "unitName": "mg"
+      },
+      "amount": 106.7
+    },
+    {
+      "nutrient": {
+        "number": "305",
+        "name": "Phosphorus, P",
+        "unitName": "mg"
+      },
+      "amount": 373.6
+    },
+    {
+      "nutrient": {
+        "number": "306",
+        "name": "Potassium, K",
+        "unitName": "mg"
+      },
+      "amount": 948.9
+    },
+    {
+      "nutrient": {
+        "number": "307",
+        "name": "Sodium, Na",
+        "unitName": "mg"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "309",
+        "name": "Zinc, Zn",
+        "unitName": "mg"
+      },
+      "amount": 3.863
+    },
+    {
+      "nutrient": {
+        "number": "312",
+        "name": "Copper, Cu",
+        "unitName": "mg"
+      },
+      "amount": 0.8376
+    },
+    {
+      "nutrient": {
+        "number": "315",
+        "name": "Manganese, Mn",
+        "unitName": "mg"
+      },
+      "amount": 1.569
+    }
+  ]
+}

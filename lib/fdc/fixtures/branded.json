@@ -1,0 +1,127 @@
+{
+  "fdcId": 2431290,
+  "description": "LENTILS",
+  "dataType": "Branded",
+  "brandedFoodCategory": "Vegetable and Lentil Mixes",
+  "brandOwner": "Hannaford Bros. Co.",
+  "brandName": "HANNAFORD",
+  "ingredients": "LENTILS.",
+  "servingSize": 48,
+  "servingSizeUnit": "g",
+  "householdServingFullText": "1/4 cup",
+  "foodPortions": [],
+  "foodNutrients": [
+    {
+      "nutrient": {
+        "number": "307",
+        "name": "Sodium, Na",
+        "unitName": "mg"
+      },
+      "amount": 10
+    },
+    {
+      "nutrient": {
+        "number": "208",
+        "name": "Energy",
+        "unitName": "kcal"
+      },
+      "amount": 292
+    },
+    {
+      "nutrient": {
+        "number": "306",
+        "name": "Potassium, K",
+        "unitName": "mg"
+      },
+      "amount": 583
+    },
+    {
+      "nutrient": {
+        "number": "324",
+        "name": "Vitamin D (D2 + D3), International Units",
+        "unitName": "IU"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "269",
+        "name": "Total Sugars",
+        "unitName": "g"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "601",
+        "name": "Cholesterol",
+        "unitName": "mg"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "203",
+        "name": "Protein",
+        "unitName": "g"
+      },
+      "amount": 22.92
+    },
+    {
+      "nutrient": {
+        "number": "605",
+        "name": "Fatty acids, total trans",
+        "unitName": "g"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "301",
+        "name": "Calcium, Ca",
+        "unitName": "mg"
+      },
+      "amount": 21
+    },
+    {
+      "nutrient": {
+        "number": "606",
+        "name": "Fatty acids, total saturated",
+        "unitName": "g"
+      },
+      "amount": 0
+    },
+    {
+      "nutrient": {
+        "number": "205",
+        "name": "Carbohydrate, by difference",
+        "unitName": "g"
+      },
+      "amount": 62.5
+    },
+    {
+      "nutrient": {
+        "number": "291",
+        "name": "Fiber, total dietary",
+        "unitName": "g"
+      },
+      "amount": 20.8
+    },
+    {
+      "nutrient": {
+        "number": "303",
+        "name": "Iron, Fe",
+        "unitName": "mg"
+      },
+      "amount": 5.62
+    },
+    {
+      "nutrient": {
+        "number": "204",
+        "name": "Total lipid (fat)",
+        "unitName": "g"
+      },
+      "amount": 2.08
+    }
+  ]
+}
