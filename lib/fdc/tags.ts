@@ -1,6 +1,15 @@
 /** Applies the rules in tag-rules.ts to a food. */
 
-import { TAG_RULES, type LevelRule, type TagLevel, type TagRules } from "./tag-rules";
+import {
+  FOOD_GROUP_RULES,
+  LOW_OXALATE_GREENS,
+  TAG_RULES,
+  type FoodGroup,
+  type GroupRule,
+  type LevelRule,
+  type TagLevel,
+  type TagRules,
+} from "./tag-rules";
 
 export interface FoodTags {
   isHemeSource: boolean;
@@ -47,4 +56,27 @@ export function tagFood(input: TagInput, rules: TagRules = TAG_RULES): FoodTags 
       !anyMatch(fortified.exclude, [input.description]),
     fatG: input.fatPer100g ?? null,
   };
+}
+
+/**
+ * The food's group, from its name first (the more specific text) and then its FDC category.
+ * Worked out on read, so rule changes apply to foods already cached.
+ */
+export function classifyFoodGroup(
+  name: string,
+  category: string | null,
+  rules: readonly GroupRule[] = FOOD_GROUP_RULES,
+): FoodGroup {
+  for (const text of [name, category]) {
+    if (!text) continue;
+    const rule = rules.find(
+      (r) => anyMatch(r.include, [text]) && !anyMatch(r.exclude ?? [], [text]),
+    );
+    if (rule) return rule.group;
+  }
+  return "other";
+}
+
+export function isLowOxalateGreen(name: string): boolean {
+  return anyMatch(LOW_OXALATE_GREENS, [name]);
 }

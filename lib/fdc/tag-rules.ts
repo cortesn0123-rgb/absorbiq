@@ -109,3 +109,141 @@ export const TAG_RULES: TagRules = {
     exclude: [/\b(not|un)[- ]?(fortified|enriched)\b/i],
   },
 };
+
+// ---------------------------------------------------------------------------
+// Food groups. Unlike the tags above, these are worked out whenever a food is read (from its
+// name and category), so edits here apply to foods already in the cache.
+// ---------------------------------------------------------------------------
+
+/** Used for protein digestibility, calcium absorption and tea/coffee effects on iron. */
+export const FOOD_GROUPS = [
+  "tea",
+  "coffee",
+  "egg",
+  "dairy",
+  "fish",
+  "meat",
+  "soy",
+  "nut_seed",
+  "legume",
+  "grain",
+  "vegetable",
+  "fruit",
+  "other",
+] as const;
+export type FoodGroup = (typeof FOOD_GROUPS)[number];
+
+export interface GroupRule {
+  group: FoodGroup;
+  include: RegExp[];
+  exclude?: RegExp[];
+}
+
+/** First matching rule wins, so order matters (e.g. tea before dairy for "tea with milk"). */
+export const FOOD_GROUP_RULES: GroupRule[] = [
+  {
+    group: "tea",
+    include: [/\btea\b/i],
+    exclude: [/\btea (cakes?|biscuits?|sandwich(es)?|breads?)\b/i, /\bteaspoons?\b/i],
+  },
+  {
+    group: "coffee",
+    include: [/\b(coffee|espresso|cappuccino|latte)\b/i],
+    exclude: [/\bcoffee (cakes?|creamers?|whiteners?)\b/i, /\bcoffee[- ]flavou?r(ed)?\b/i],
+  },
+  {
+    group: "egg",
+    include: [
+      /^eggs?\b/i,
+      /\b(egg|eggs), (whole|white|yolk)\b/i,
+      /\b(omelets?|omelettes?|scrambled eggs?)\b/i,
+    ],
+    exclude: [/\begg (noodles?|rolls?|nog)\b/i],
+  },
+  {
+    group: "dairy",
+    include: [
+      /\b(dairy|milk|cheeses?|yogh?urts?|kefir|cream|buttermilk|cottage|ricotta|mozzarella|cheddar|parmesan)\b/i,
+      /^butter\b/i,
+    ],
+    exclude: [
+      /\b(soy|soya|almond|oat|rice|coconut|cashew|hemp|plant[- ]based|nut)\s*(milk|beverage|drink|yogh?urt|cheese)\b/i,
+      /\b(peanut|nut|cocoa|apple) butter\b/i,
+      /\bmilk chocolate\b/i,
+      /\bcream of\b/i,
+    ],
+  },
+  {
+    group: "fish",
+    include: [
+      /\b(fish|finfish|seafood|shellfish|salmon|tuna|cod|tilapia|sardines?|anchov(y|ies)|mackerel|trout|halibut|herring|pollock|catfish|haddock)\b/i,
+      /\b(shrimp|prawns?|crab|lobster|clams?|mussels?|oysters?|scallops?|squid|octopus|crayfish|crustaceans|mollusks)\b/i,
+    ],
+    exclude: [/\bfish (oil|sauce)\b/i, /\bimitation\b/i],
+  },
+  {
+    group: "meat",
+    include: [
+      /\b(beef|veal|pork|ham|lamb|mutton|goat|venison|bison|game|meats?|poultry|chicken|turkey|duck|goose|quail)\b/i,
+      /\b(liver|sausages?|bacon|frankfurters?|hot dogs?|salami|pepperoni|cold cuts|jerky|hamburgers?|meatballs?)\b/i,
+    ],
+    exclude: [
+      /\b(vegetarian|vegan|meatless|plant[- ]based|meat substitutes?|veggie|imitation)\b/i,
+      /\b(nut meats?|coconut meat)\b/i,
+    ],
+  },
+  {
+    group: "soy",
+    include: [/\b(soy|soya|soybeans?|tofu|tempeh|edamame|natto|miso)\b/i],
+    exclude: [/\bsoy sauce\b/i],
+  },
+  {
+    group: "legume",
+    include: [
+      /\blegumes?\b/i,
+      /\b(beans?|lentils?|chickpeas?|garbanzo|split peas?|black[- ]eyed peas?|peas, mature|hummus|dal|dhal)\b/i,
+    ],
+    // Peanuts are botanically legumes but digest like nuts (WHO 2007).
+    exclude: [
+      /\bpeanuts?\b/i,
+      /\b(green|snap|string|wax|jelly|coffee|vanilla) beans?\b/i,
+      /\bbeans?, (snap|green|string|wax)\b/i,
+    ],
+  },
+  {
+    group: "nut_seed",
+    include: [
+      /\bnut and seed\b/i,
+      /\b(nuts?|almonds?|walnuts?|cashews?|pecans?|pistachios?|peanuts?|hazelnuts?|macadamia|brazil nuts?)\b/i,
+      /\b(seeds?|sesame|tahini|flaxseed|chia|sunflower|pumpkin seeds?)\b/i,
+    ],
+    exclude: [/\b(nutmeg|coconut|butternut|doughnut)\b/i],
+  },
+  {
+    group: "grain",
+    include: [
+      /\b(cereal grains|baked products|breakfast cereals?|yeast breads|pasta|noodles?)\b/i,
+      /\b(bread|bagels?|rolls?|tortillas?|crackers?|rice|flour|corn ?meal|grits|couscous|oats?|oatmeal|quinoa|barley|buckwheat|millet|rye|bulgur|wheat|cereals?|granola|muesli)\b/i,
+    ],
+  },
+  {
+    group: "vegetable",
+    include: [
+      /\bvegetables?\b/i,
+      /\b(greens|spinach|kale|chard|lettuce|broccoli|cabbage|carrots?|tomato(es)?|potato(es)?|peppers?|onions?|squash)\b/i,
+    ],
+  },
+  {
+    group: "fruit",
+    include: [
+      /\bfruits?\b/i,
+      /\b(juice|apples?|bananas?|oranges?|berries|grapes?|melons?|pears?|peaches?|citrus)\b/i,
+    ],
+  },
+];
+
+/**
+ * Low-oxalate leafy greens and brassicas whose calcium is well absorbed (measured: kale,
+ * bok choy, broccoli; Weaver et al. 1999).
+ */
+export const LOW_OXALATE_GREENS: RegExp[] = [/\b(kale|bok choy|pak choi|pak-choi|broccoli)\b/i];

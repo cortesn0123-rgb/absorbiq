@@ -3,7 +3,7 @@ import { normalizeFood } from "./normalize";
 import branded from "./fixtures/branded.json";
 import sr from "./fixtures/sr.json";
 import survey from "./fixtures/survey.json";
-import { tagFood, type TagInput } from "./tags";
+import { classifyFoodGroup, isLowOxalateGreen, tagFood, type TagInput } from "./tags";
 
 function tags(description: string, extra: Partial<TagInput> = {}) {
   return tagFood({
@@ -122,5 +122,49 @@ describe("fat", () => {
   it("records fat per 100 g, or null when FDC has no data", () => {
     expect(tags("Oil", { fatPer100g: 100 }).fatG).toBe(100);
     expect(tags("Water").fatG).toBeNull();
+  });
+});
+
+describe("food groups", () => {
+  it.each([
+    [
+      "Lentils, mature seeds, cooked, boiled, without salt",
+      "Legumes and Legume Products",
+      "legume",
+    ],
+    ["Peanut butter, smooth style", "Legumes and Legume Products", "nut_seed"],
+    ["Soybeans, mature seeds, cooked", "Legumes and Legume Products", "soy"],
+    ["Tofu, raw, firm", null, "soy"],
+    ["Beverages, tea, black, brewed", "Beverages", "tea"],
+    ["Tea, hot, leaf, green", "Tea", "tea"],
+    ["Coffee, brewed from grounds", "Beverages", "coffee"],
+    ["Milk, whole, 3.25% milkfat", "Dairy and Egg Products", "dairy"],
+    ["Almond milk, unsweetened", null, "nut_seed"],
+    ["Egg, whole, cooked, hard-boiled", "Dairy and Egg Products", "egg"],
+    ["Beef, ground, 85% lean meat / 15% fat, cooked", "Beef Products", "meat"],
+    ["Fish, salmon, Atlantic, farmed, cooked", "Finfish and Shellfish Products", "fish"],
+    ["Veggie burger", null, "other"],
+    ["Rice, brown, long-grain, cooked", "Cereal Grains and Pasta", "grain"],
+    ["Spinach, raw", "Vegetables and Vegetable Products", "vegetable"],
+    ["Beans, snap, green, raw", "Vegetables and Vegetable Products", "vegetable"],
+    ["Orange juice, raw", "Fruits and Fruit Juices", "fruit"],
+    ["Seeds, chia seeds, dried", "Nut and Seed Products", "nut_seed"],
+  ])("%s → %s", (name, category, group) => {
+    expect(classifyFoodGroup(name, category)).toBe(group);
+  });
+
+  it("does not treat coffee cake as coffee", () => {
+    expect(classifyFoodGroup("Coffee cake, crumb-topped", "Baked Products")).toBe("grain");
+  });
+
+  it("falls back to the category when the name does not match", () => {
+    expect(classifyFoodGroup("Babaganoush", "Vegetables and Vegetable Products")).toBe("vegetable");
+    expect(classifyFoodGroup("Mystery food", null)).toBe("other");
+  });
+
+  it("recognizes low-oxalate greens", () => {
+    expect(isLowOxalateGreen("Kale, raw")).toBe(true);
+    expect(isLowOxalateGreen("Broccoli, cooked")).toBe(true);
+    expect(isLowOxalateGreen("Spinach, raw")).toBe(false);
   });
 });

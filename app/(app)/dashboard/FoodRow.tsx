@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { MacroLine } from "@/components/MacroLine";
 import { MealPicker } from "@/components/MealPicker";
-import { NutrientList, valuesFromAmounts } from "@/components/NutrientList";
+import { NutrientList, valuesFromEstimates } from "@/components/NutrientList";
 import { PortionInput } from "@/components/PortionInput";
+import type { NutrientEstimates } from "@/lib/bioavailability";
 import { formatNumber, formatPortion } from "@/lib/format";
 import { initialChoice, resolveChoice } from "@/lib/logs/portion-choice";
 import type { LoggedFood } from "@/lib/logs/queries";
@@ -14,13 +15,18 @@ import { deleteLog, setFavorite, updateLog } from "../actions";
 const actionClass =
   "h-10 rounded-lg px-3 text-sm font-medium hover:bg-zinc-100 disabled:opacity-60 dark:hover:bg-zinc-900";
 
-/** One logged food: summary row that expands to every nutrient, with edit and delete. */
+/**
+ * One logged food: summary row that expands to every nutrient, eaten and absorbed (absorption
+ * depends on the rest of the meal), with edit and delete.
+ */
 export function FoodRow({
   log,
+  absorption,
   isFavorite,
   snackNumbers,
 }: {
   log: LoggedFood;
+  absorption: NutrientEstimates;
   isFavorite: boolean;
   snackNumbers: number[];
 }) {
@@ -98,7 +104,7 @@ export function FoodRow({
             />
           ) : (
             <>
-              <NutrientList values={valuesFromAmounts(amounts)} />
+              <NutrientList values={valuesFromEstimates(absorption)} />
               <div className="flex flex-wrap gap-1">
                 <button type="button" onClick={() => setEditing(true)} className={actionClass}>
                   Edit

@@ -1,9 +1,22 @@
 /** The foods table row, and the shape the rest of the app uses. */
 
 import { isNutrientId } from "@/lib/nutrients/registry";
-import type { NutrientAmounts } from "./mapping";
+import { convertFdcAmount, parseFdcUnit, type NutrientAmounts } from "./mapping";
 import type { NormalizedFood } from "./normalize";
 import type { Portion } from "./portions";
+import type { FoodGroup, TagLevel } from "./tag-rules";
+import { classifyFoodGroup, isLowOxalateGreen } from "./tags";
+
+/** Tags the bioavailability engine reads. */
+export interface FoodRecordTags {
+  isHemeSource: boolean;
+  phytateLevel: TagLevel;
+  oxalateLevel: TagLevel;
+  isFortified: boolean;
+  /** Worked out on read from the name and category (see tag-rules.ts). */
+  foodGroup: FoodGroup;
+  isLowOxalateGreen: boolean;
+}
 
 export interface FoodRecord {
   /** Our foods.id */
@@ -13,11 +26,18 @@ export interface FoodRecord {
   brand: string | null;
   dataType: string;
   nutrientsPer100g: NutrientAmounts;
+  /**
+   * Preformed vitamin A (retinol, FDC 319) in mcg per 100 g; the rest of the RAE is from
+   * carotenoids. Null when FDC does not report retinol.
+   */
+  retinolPer100g: number | null;
   portions: Portion[];
+  tags: FoodRecordTags;
 }
 
 /** Columns for `FoodRow`, for Supabase selects (also usable inside a join). */
-export const FOOD_COLUMNS = "id, fdc_id, name, brand, data_type, nutrients_per_100g, portions";
+export const FOOD_COLUMNS =
+  "id, fdc_id, name, brand, data_type, category, nutrients_per_100g, fdc_nutrients, portions, is_heme_source, phytate_level, oxalate_level, is_fortified";
 
 export interface FoodRow {
   id: number;
@@ -25,8 +45,28 @@ export interface FoodRow {
   name: string;
   brand: string | null;
   data_type: string;
+  category: string | null;
   nutrients_per_100g: Record<string, unknown>;
+  fdc_nutrients: Record<string, { amount?: unknown; unit?: unknown }> | null;
   portions: Portion[] | null;
+  is_heme_source: boolean;
+  phytate_level: string;
+  oxalate_level: string;
+  is_fortified: boolean;
+}
+
+const LEVELS: readonly TagLevel[] = ["none", "low", "medium", "high"];
+const toLevel = (value: string): TagLevel =>
+  (LEVELS as readonly string[]).includes(value) ? (value as TagLevel) : "none";
+
+/** FDC nutrient number for retinol (preformed vitamin A). */
+const RETINOL = "319";
+
+function retinolPer100g(fdc: FoodRow["fdc_nutrients"]): number | null {
+  const entry = fdc?.[RETINOL];
+  const unit = typeof entry?.unit === "string" ? parseFdcUnit(entry.unit) : null;
+  if (!entry || typeof entry.amount !== "number" || !unit) return null;
+  return convertFdcAmount(entry.amount, unit, "UG");
 }
 
 export function toFoodRecord(row: FoodRow): FoodRecord {
@@ -41,7 +81,16 @@ export function toFoodRecord(row: FoodRow): FoodRecord {
     brand: row.brand,
     dataType: row.data_type,
     nutrientsPer100g,
+    retinolPer100g: retinolPer100g(row.fdc_nutrients),
     portions: row.portions ?? [],
+    tags: {
+      isHemeSource: row.is_heme_source,
+      phytateLevel: toLevel(row.phytate_level),
+      oxalateLevel: toLevel(row.oxalate_level),
+      isFortified: row.is_fortified,
+      foodGroup: classifyFoodGroup(row.name, row.category),
+      isLowOxalateGreen: isLowOxalateGreen(row.name),
+    },
   };
 }
 

@@ -1,10 +1,12 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
-import { NutrientList, valuesFromTotals } from "@/components/NutrientList";
+import { NutrientList, valuesFromEstimates } from "@/components/NutrientList";
 import { requireUser } from "@/lib/auth";
 import { TZ_COOKIE, formatDayLabel, formatLongDate, isIsoDate, todayIn } from "@/lib/dates";
-import { formatNumber } from "@/lib/format";
+import { formatAmount, formatNumber } from "@/lib/format";
+import { loadEngineProfile, loadFactorTable } from "@/lib/logs/absorption-data";
+import { absorbLogs } from "@/lib/logs/day-absorption";
 import { getDayLogs, getFavoriteFoodIds, getWaterLogs, type LoggedFood } from "@/lib/logs/queries";
 import {
   compareOccasions,
@@ -56,7 +58,7 @@ function addHref(date: string, { slot, snackNumber }: MealOccasion): string {
 }
 
 async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams">) {
-  await requireUser();
+  const user = await requireUser();
   const [params, cookieStore, supabase] = await Promise.all([
     searchParams,
     cookies(),
@@ -65,11 +67,16 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
   const today = todayIn(cookieStore.get(TZ_COOKIE)?.value);
   const date = isIsoDate(params.date) ? params.date : today;
 
-  const [logs, water, favoriteIds] = await Promise.all([
+  const [logs, water, favoriteIds, profile, factors] = await Promise.all([
     getDayLogs(supabase, date),
     getWaterLogs(supabase, date),
     getFavoriteFoodIds(supabase),
+    loadEngineProfile(supabase, user.id),
+    loadFactorTable(supabase),
   ]);
+  // Recomputed on every view (never stored), so factor changes apply to past days too.
+  const absorption = absorbLogs(logs, profile, factors);
+  const dayIron = absorption.day.totals.iron;
   const portions = new Map(
     logs.map((l) => [l.id, nutrientsForGrams(l.food.nutrientsPer100g, l.grams)]),
   );
@@ -97,13 +104,19 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
           {formatNumber(totals.carbohydrate.amount ?? 0)} g · Fat{" "}
           {formatNumber(totals.fat.amount ?? 0)} g
         </p>
+        {dayIron.consumed !== null && dayIron.absorbed !== null && (
+          <p className="mt-1 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+            Iron {formatAmount(dayIron.consumed, "mg")} eaten · ~
+            {formatAmount(dayIron.absorbed, "mg")} absorbed
+          </p>
+        )}
         {logs.length > 0 && (
           <details className="mt-3 text-sm">
             <summary className="cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">
               All nutrients
             </summary>
             <div className="pt-2">
-              <NutrientList values={valuesFromTotals(totals)} />
+              <NutrientList values={valuesFromEstimates(absorption.day.totals)} />
             </div>
           </details>
         )}
@@ -122,6 +135,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
             ? "Snack"
             : occasionLabel(occasion);
         const kcal = mealLogs.reduce((sum, l) => sum + (portions.get(l.id)?.energy ?? 0), 0);
+        const mealTotals = absorption.byMeal.get(occasionKey(occasion));
         return (
           <section key={occasionKey(occasion)}>
             <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-1 dark:border-zinc-800">
@@ -149,11 +163,22 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
                   <FoodRow
                     key={log.id}
                     log={log}
+                    absorption={absorption.byLog.get(log.id)!}
                     isFavorite={favorites.has(log.food.id)}
                     snackNumbers={snackNumbers}
                   />
                 ))}
               </ul>
+            )}
+            {mealTotals && (
+              <details className="text-sm">
+                <summary className="cursor-pointer py-2 text-zinc-600 dark:text-zinc-400">
+                  {label} nutrients: eaten vs absorbed
+                </summary>
+                <div className="pb-3">
+                  <NutrientList values={valuesFromEstimates(mealTotals)} />
+                </div>
+              </details>
             )}
           </section>
         );
@@ -161,8 +186,9 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
 
       {logs.length > 0 && (
         <p className="text-xs text-zinc-500">
-          Amounts are what you ate (consumed). &ldquo;No data&rdquo; or &ldquo;–&rdquo; means
-          FoodData Central has no value for that nutrient, which is not the same as zero.
+          Absorbed amounts are estimates that depend on what you ate together in each meal; tap one
+          to see why. &ldquo;No data&rdquo; or &ldquo;–&rdquo; means FoodData Central has no value
+          for that nutrient, which is not the same as zero.
         </p>
       )}
 

@@ -45,18 +45,35 @@ describe("food record round trip", () => {
     expect(insert.phytate_level).toBe("high");
 
     const record = toFoodRecord({
+      ...insert,
       id: 7,
-      fdc_id: insert.fdc_id,
-      name: insert.name,
-      brand: insert.brand,
-      data_type: insert.data_type,
       nutrients_per_100g: { ...insert.nutrients_per_100g, "303": 99, bogus: "x" },
-      portions: insert.portions,
     });
     expect(record.nutrientsPer100g.iron).toBe(3.33);
     expect(record.nutrientsPer100g).not.toHaveProperty("303");
     expect(record.nutrientsPer100g).not.toHaveProperty("bogus");
     expect(record.portions[0]).toEqual({ label: "1 cup", grams: 198 });
+    expect(record.tags).toEqual({
+      isHemeSource: false,
+      phytateLevel: "high",
+      oxalateLevel: "none",
+      isFortified: false,
+      foodGroup: "legume",
+      isLowOxalateGreen: false,
+    });
+    // SR lentils report retinol (FDC 319) as 0 µg: all of their (zero) vitamin A is carotenoid.
+    expect(record.retinolPer100g).toBe(0);
+  });
+
+  it("reads retinol in mcg and returns null when FDC does not report it", () => {
+    const insert = toFoodInsert(normalizeFood(sr));
+    const withRetinol = toFoodRecord({
+      ...insert,
+      id: 1,
+      fdc_nutrients: { "319": { amount: 0.05, unit: "MG" } },
+    });
+    expect(withRetinol.retinolPer100g).toBe(50);
+    expect(toFoodRecord({ ...insert, id: 1, fdc_nutrients: {} }).retinolPer100g).toBeNull();
   });
 });
 
