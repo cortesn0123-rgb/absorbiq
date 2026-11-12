@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 
@@ -13,8 +12,6 @@ export default function DashboardPage() {
 }
 
 async function Dashboard() {
-  // Per-user page: render at request time only. The session check reads the clock (Date.now()).
-  await connection();
   const user = await requireUser();
 
   return (

@@ -77,7 +77,11 @@ The user picks one tier.
 | **Average man / woman**  | National Academies DRIs (RDA/AI) by age and sex; AMDR for macro percentages; 2023 NASEM energy equations.                                                              |
 | **Athletic man / woman** | The Average tier plus peer-reviewed sports-nutrition rules, scaled by body weight and training load.                                                                   |
 
-Average and Athletic limits from the **Dietary Guidelines for Americans 2025–2030**: saturated fat under 10% of calories; added sugars at most **10 g per meal** (summed per meal; flag any meal over). Breakfast, lunch and dinner are one meal each; **each snack is checked on its own** (Phase 2: food logs get a snack number or timestamp so snacks can be told apart, and `lib/nutrients/meal-limits.ts` groups by meal occasion instead of slot).
+Average and Athletic limits from the **Dietary Guidelines for Americans 2025–2030**:
+
+- **Saturated fat:** under 10% of calories per day.
+- **Added sugars:** at most **10 g per meal**, summed per meal; flag any meal over.
+- **Each snack counts as its own meal** for the added-sugar limit; snacks are never summed together. Breakfast, lunch and dinner are one meal each. Phase 2: food logs get a snack number or timestamp so snacks can be told apart, and `lib/nutrients/meal-limits.ts` groups by meal occasion instead of slot.
 
 Athletic micronutrient rules (everything else = Average):
 
@@ -145,6 +149,6 @@ One registry file defines every nutrient. Every other part of the app reads from
 ## 7. Codebase notes
 
 - **Next.js 16**: read `AGENTS.md`. Middleware is now `proxy.ts`; Cache Components are on, so anything that reads cookies/session must sit inside a `<Suspense>` boundary.
-- Key paths: `lib/nutrients/registry.ts` (nutrient source of truth), `lib/nutrients/targets.ts` (daily targets), `lib/supabase/*` (clients), `lib/auth.ts` (`requireUser`), `supabase/migrations/` (SQL).
+- Key paths: `lib/nutrients/registry.ts` (nutrient source of truth), `lib/nutrients/targets.ts` (daily targets), `lib/supabase/*` (clients), `lib/auth.ts` (`requireUser`: call it inside `<Suspense>` on every signed-in page; it awaits `connection()` so the page renders per request), `supabase/migrations/` (SQL).
 - Users must be 14 or older (DRI tables in the registry start at 14–18).
 - Checks: `npm run check` (typecheck + lint + tests). Format with `npm run format`.
