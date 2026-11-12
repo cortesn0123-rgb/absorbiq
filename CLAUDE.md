@@ -23,7 +23,7 @@ A web app for tracking macronutrients and micronutrients from the food a person 
    - The whole UI respects that selection.
 
 4. **AI helper**
-   - Suggests specific foods and portions to close the gap between **absorbed** intake and the user's goals for the rest of the day.
+   - Suggests specific foods and portions to close the gap between **consumed** intake and the user's goals for the rest of the day, favouring pairings that raise the **absorption score** (see section 5, Goals and absorption score).
 
 5. **Macro tracker**
    - Calories, protein, carbs, fiber, sugars, added sugars, fat (saturated, trans, monounsaturated, polyunsaturated, omega-3 ALA, omega-6 linoleic), cholesterol and water.
@@ -114,6 +114,15 @@ One registry file defines every nutrient. Every other part of the app reads from
 - All bioavailability logic lives in **one pure, unit-tested module**: `lib/bioavailability`. No absorption math anywhere else.
 - Every absorption factor is **data, not inline code**: stored in a config table with a value, a low–high range, and a source citation.
 - **Never double count.** USDA already reports vitamin A as RAE and folate as DFE, which already include an absorption adjustment. The engine must not apply a second conversion to those.
+- **Iron:** non-heme iron uses the Hallberg & Hulthén (2000) algorithm: absorption from an inhibitor-free meal, then each enhancer or inhibitor factor applied **once**. Do not stack inhibitor effects on a baseline that already reflects typical meals (e.g. Monsen's 3%).
+
+### Goals and absorption score
+
+- **Goals stay as published** (FDA DVs, DRIs, DGA limits). They are intake amounts and already assume typical absorption, so never convert a goal into an absorbed amount.
+- **Progress bars compare CONSUMED intake to the goal.** Never compare absorbed amounts to a goal.
+- **Absorption score** = absorbed ÷ expected absorbed, where expected absorbed = goal × the nutrient's typical absorption factor (`typicalAbsorption` in `lib/bioavailability/score.ts`, from the factor table). It shows whether the user's food pairings beat (above 1) or fall short of (below 1) a typical diet. `pairing` (= score ÷ progress) isolates the pairing effect.
+- Not scored: limits, nutrients counted as eaten (calories, fiber, water), carbohydrate (its goal includes fiber, which is not absorbed) and nutrients with no goal.
+- The **AI helper** closes consumed-vs-goal gaps, and among foods that do, favours pairings that raise the absorption score (e.g. vitamin C with plant iron, fat with carotenoids, tea away from iron-rich meals).
 
 ### Presentation of estimates
 

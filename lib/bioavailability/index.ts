@@ -9,6 +9,12 @@ import type { EngineFood } from "./types";
 export { absorbDay, absorbMeal, sumEstimates } from "./engine";
 export { DEFAULT_FACTORS, FactorTable } from "./factor-table";
 export { FACTOR_ROWS, type FactorRow } from "./factors";
+export {
+  absorptionScore,
+  typicalAbsorption,
+  type AbsorptionScore,
+  type TypicalAbsorption,
+} from "./score";
 export * from "./types";
 
 /** A logged food portion as engine input. */

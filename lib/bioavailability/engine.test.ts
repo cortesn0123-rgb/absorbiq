@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { NUTRIENT_IDS, type NutrientId } from "@/lib/nutrients/registry";
 import { absorbDay, absorbMeal } from "./engine";
-import { DEFAULT_FACTORS, FactorTable, curveAt } from "./factor-table";
+import { DEFAULT_FACTORS, FactorTable } from "./factor-table";
 import { FACTOR_ROWS } from "./factors";
-import { b12AbsorbedPerMeal, phytateZincRatio } from "./rules";
+import { buildMealContext, type MealContext } from "./meal-context";
+import { b12AbsorbedPerMeal, nonhemeFactors, phytateZincRatio } from "./rules";
 import {
   blackTea,
   carrots,
@@ -37,43 +38,108 @@ const ironOnly = (extra: Record<string, number> = {}): EngineFood =>
 // Iron
 // ---------------------------------------------------------------------------
 
-describe("non-heme iron: Monsen–Balintfy enhancers", () => {
-  it("starts at 3% with no enhancers or inhibitors, ranging with iron status", () => {
+/** A meal context with only the given amounts (phytate in mg phytic acid). */
+function ctxWith(
+  parts: Partial<{
+    phytateMg: number;
+    vitaminCMg: number;
+    calciumMg: number;
+    mfpG: number;
+    eggG: number;
+    soyProteinG: number;
+  }>,
+): MealContext {
+  const phytate = parts.phytateMg ?? 0;
+  const mfp = parts.mfpG ?? 0;
+  return {
+    foods: [],
+    vitaminCMg: parts.vitaminCMg ?? 0,
+    mfpGrams: { low: mfp, value: mfp, high: mfp },
+    calciumMg: parts.calciumMg ?? 0,
+    fatG: 0,
+    teaG: 0,
+    coffeeG: 0,
+    eggG: parts.eggG ?? 0,
+    soyProteinG: parts.soyProteinG ?? 0,
+    zincMg: 0,
+    b12Ug: 0,
+    phytateMg: { min: phytate, value: phytate, max: phytate },
+    phytateSources: [],
+    dayCopperMg: 0,
+  };
+}
+
+/** mg phytic acid containing the given mg of phytate phosphorus. */
+const phytateFromP = (mgP: number) => mgP / 0.2816;
+const factors = (parts: Parameters<typeof ctxWith>[0]) =>
+  nonhemeFactors(ctxWith(parts), DEFAULT_FACTORS, "value");
+
+describe("non-heme iron: Hallberg & Hulthén 2000", () => {
+  it("starts at 22.1% for a meal with no inhibitors or enhancers, ranging with iron status", () => {
     const e = get(absorbMeal([ironOnly()]), 0, "iron");
-    expect(e.absorbed).toBeCloseTo(0.3); // 10 mg x 3%
-    expect(e.low).toBeCloseTo(0.195); // x 15/23
-    expect(e.high).toBeCloseTo(0.456); // x 35/23
+    expect(e.absorbed).toBeCloseTo(2.21); // 10 mg x 22.1%
+    expect(e.low).toBeCloseTo(2.21 * 0.65);
+    expect(e.high).toBeCloseTo(2.21 * 1.52);
   });
 
-  it("follows 3 + 8.93 ln((EF + 100) / 100) percent", () => {
-    // EF = 25 mg vitamin C: 3 + 8.93 x ln(1.25) = 4.99%
-    expect(fraction(absorbMeal([ironOnly({ vitamin_c: 25 })]), 0, "iron")).toBeCloseTo(0.04993, 4);
+  it("phytate factor (1 + P)^-0.3 tracks Hallberg 1989's measured points", () => {
+    expect(factors({ phytateMg: phytateFromP(2) }).phytate).toBeCloseTo(0.719, 3); // measured 0.82
+    expect(factors({ phytateMg: phytateFromP(25) }).phytate).toBeCloseTo(0.376, 3); // measured 0.36
+    expect(factors({ phytateMg: phytateFromP(250) }).phytate).toBeCloseTo(0.191, 3); // measured 0.18
   });
 
-  it("reaches 8% at 75 enhancing units and rises no further", () => {
-    const at75 = fraction(absorbMeal([ironOnly({ vitamin_c: 75 })]), 0, "iron");
-    const at300 = fraction(absorbMeal([ironOnly({ vitamin_c: 300 })]), 0, "iron");
-    expect(at75).toBeCloseTo(0.07997, 4);
-    expect(at300).toBeCloseTo(at75, 10);
+  it("vitamin C raises absorption, and offsets phytate", () => {
+    expect(factors({ vitaminCMg: 50 }).vitaminC).toBeCloseTo(1.5);
+    // 1 + 0.5 + 0.01 x log10(26) x 51^0.8875
+    expect(factors({ vitaminCMg: 50, phytateMg: phytateFromP(25) }).vitaminC).toBeCloseTo(1.964, 2);
+    expect(factors({}).vitaminC).toBe(1);
   });
 
-  it("reproduces Hallberg's phytate dose-response points", () => {
-    const at = (mgP: number) =>
-      curveAt(DEFAULT_FACTORS, "iron", "phytate_p_mg", mgP, "value", "log");
-    expect(at(0)).toBe(1);
-    expect(at(2)).toBeCloseTo(0.82);
-    expect(at(25)).toBeCloseTo(0.36);
-    expect(at(250)).toBeCloseTo(0.18);
-    expect(at(1000)).toBeCloseTo(0.18);
-    expect(at(10)).toBeLessThan(0.82);
-    expect(at(10)).toBeGreaterThan(0.36);
+  it("meat raises absorption, more so with phytate", () => {
+    expect(factors({ mfpG: 200 }).meat).toBeCloseTo(2.256);
+    expect(factors({ mfpG: 100, phytateMg: phytateFromP(100) }).meat).toBeCloseTo(1 + 0.628 * 1.6);
   });
 
-  it("lowers absorption by 50–60% at 165 mg calcium, phased in below it", () => {
-    const at = (mg: number) => curveAt(DEFAULT_FACTORS, "iron", "calcium_mg", mg, "value");
-    expect(at(165)).toBeCloseTo(0.45);
-    expect(at(400)).toBeCloseTo(0.45);
-    expect(at(82.5)).toBeCloseTo(0.725);
+  it("calcium lowers absorption along Hallberg's curve (about 50-60% at 165-600 mg)", () => {
+    expect(factors({ calciumMg: 0 }).calcium).toBeCloseTo(1);
+    expect(factors({ calciumMg: 165 }).calcium).toBeCloseTo(0.532, 2);
+    expect(factors({ calciumMg: 300 }).calcium).toBeCloseTo(0.434, 2);
+    expect(factors({ calciumMg: 2000 }).calcium).toBeGreaterThan(0.408);
+  });
+
+  it("egg and soy lower absorption, held so the factors stay positive", () => {
+    expect(factors({ eggG: 50 }).egg).toBeCloseTo(0.73);
+    expect(factors({ eggG: 200 }).egg).toBeCloseTo(0.73);
+    expect(factors({ soyProteinG: 10 }).soy).toBeCloseTo(0.78);
+    expect(factors({ soyProteinG: 60 }).soy).toBeCloseTo(0.34);
+  });
+
+  it("applies each factor once: absorption is basal x the product of factors", () => {
+    const foods = [lentils(), orangeJuice(), steak()];
+    const meal = absorbMeal(foods);
+    const x = nonhemeFactors(buildMealContext(foods, DEFAULT_FACTORS), DEFAULT_FACTORS, "value");
+    const expected =
+      0.221 * x.phytate * x.vitaminC * x.meat * x.calcium * x.egg * x.soy * x.tea * x.coffee;
+    const lentilIron = get(meal, 0, "iron");
+    expect(lentilIron.absorbed! / lentilIron.consumed!).toBeCloseTo(expected, 10);
+  });
+});
+
+describe("lentils alone land in a realistic range for legumes", () => {
+  // Measured non-heme absorption from legume meals is a few percent: 2.5% from a whole-bean meal
+  // (Petry et al. 2010, J Nutr 140:1977-82) and low absorption from lentil dal (DellaValle et al.
+  // 2015, J Nutr). The estimate omits legume polyphenols, so it sits toward the upper end.
+  const e = get(absorbMeal([lentils()]), 0, "iron");
+  const fraction = e.absorbed! / e.consumed!;
+
+  it("central estimate is between 1% and 5%", () => {
+    expect(fraction).toBeGreaterThan(0.01);
+    expect(fraction).toBeLessThan(0.05);
+  });
+
+  it("range covers the 2.5% measured for beans", () => {
+    expect(e.low! / e.consumed!).toBeLessThan(0.025);
+    expect(e.high! / e.consumed!).toBeGreaterThan(0.025);
   });
 });
 
@@ -153,7 +219,7 @@ describe("steak and spinach", () => {
   it("absorbs the steak's heme iron at 23% plus some non-heme iron", () => {
     const e = get(meal, 0, "iron");
     expect(e.absorbed!).toBeGreaterThan(hemePart);
-    expect(e.absorbed!).toBeLessThan(hemePart + 0.6 * 5.8 * 0.08);
+    expect(e.absorbed!).toBeLessThan(5.8 * 0.5);
     expect(hasReason(e.reasons, /heme iron .* absorbed at about 23%/)).toBe(true);
   });
 

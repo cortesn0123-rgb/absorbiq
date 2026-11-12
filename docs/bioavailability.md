@@ -48,37 +48,56 @@ poultry and fish is heme iron. It is absorbed at about **23%**, ranging from **1
 stores) to **35%** (no iron stores). Other foods in the meal barely affect it.
 
 **Non-heme iron** (all other iron, including the other 60% in meat) depends on the whole meal.
+We use the **Hallberg & Hulthén (2000)** algorithm. It starts from the absorption of an
+inhibitor-free meal and multiplies in one factor per component, so **each effect is counted
+once**:
 
-- **Starting point and boosters.** We use the Monsen & Balintfy (1982) equation:
-  absorption = 3% + 8.93% × ln((EF + 100) / 100), where EF ("enhancing factors") = mg of
-  vitamin C + grams of cooked meat, poultry or fish in the meal. EF is capped at 75, where
-  absorption reaches 8%. With no boosters, absorption is 3%. These figures assume average iron
-  stores (500 mg). Because your iron status is unknown, the range scales non-heme absorption
-  by the same ratios as heme (15/23 to 35/23). That is our assumption.
-  - The grams of meat in a mixed dish (e.g. chicken soup) are estimated from its protein
-    (4 g of food per g of protein, since cooked lean meat is 20–30% protein), capped at the
-    dish's weight.
-- **Reducers**, multiplied on top. Applying reducers on top of the Monsen model follows
-  published population studies (Tseng et al. 1997).
-  - **Phytate** (beans, lentils, whole grains, nuts, seeds). Hallberg et al. (1989): 2 mg of
-    phytate phosphorus lowered iron absorption by **18%**, 25 mg by **64%** and 250 mg by
-    **82%**. We interpolate between these points (on a log scale) and hold the 82% beyond 250 mg.
-    Phytate phosphorus is 28.16% of phytic acid by weight. How phytate is estimated is
-    described under "Phytate content" below.
-  - **Tea**: **62–64%** lower (Hallberg & Rossander 1982; Morck et al. 1983).
-  - **Coffee**: **35–39%** lower (same studies).
-    The full effect is for a cup (200 g); smaller amounts have a proportionally smaller effect
-    (our assumption).
-  - **Calcium**: Hallberg et al. (1991) found 165 mg of calcium in a meal lowered non-heme iron
-    absorption by **50–60%**, dose-related up to about 300 mg, and 50–60% at 300–600 mg. We
-    phase the effect in linearly from 0 to 165 mg, then hold it at 55% (range 50–60%).
+absorption = 22.1% × phytate × vitamin C × meat × calcium × egg × soy × tea × coffee × iron status
 
-**Known limitations.** Monsen's 3% baseline comes from ordinary meals, which already contain
-some phytate and polyphenols, so adding the phytate reduction may partly count phytate twice.
-That would make the estimates for high-phytate meals somewhat low. Vitamin C also partly
-cancels phytate's effect (Hallberg 1989; Siegenberg 1991). We model the two separately, which
-is more cautious. Calcium also lowers heme iron (Hallberg 1991), which is not modelled.
-Studies over weeks suggest the body adapts and the calcium effect is smaller over time.
+- **Starting point: 22.1%**, the absorption from a wheat roll with nothing that helps or hinders.
+- **Phytate**: (1 + P)^−0.3, where P = mg phytate phosphorus (28.16% of phytic acid by weight).
+  This gives 28% lower absorption at 2 mg, 62% at 25 mg and 81% at 250 mg. Hallberg et al. (1989)
+  measured 18%, 64% and 82%.
+- **Vitamin C**: 1 + 0.01 × C + 0.01 × log10(P + 1) × (C + 1)^0.8875, where C = mg vitamin C.
+  Vitamin C raises absorption and, through the second term, offsets part of the phytate effect.
+  50 mg raises absorption 1.5× with no phytate, or about 2× with 25 mg phytate phosphorus.
+- **Meat, poultry, fish**: 1 + 0.00628 × M × (1 + 0.006 × P), where M = grams. 200 g of steak
+  raises absorption about 2.3×. The grams of meat in a mixed dish (e.g. chicken soup) are
+  estimated from its protein (4 g of food per g of protein, since cooked lean meat is 20–30%
+  protein), capped at the dish's weight.
+- **Calcium**: 0.4081 + 0.5919 / (1 + 10^(−2.919 × (2.022 − log10(Ca + 1)))), Ca in mg. This
+  gives about 47% lower at 165 mg and 57% at 300 mg, levelling off at 59%. Hallberg et al. (1991)
+  measured 50–60%.
+- **Egg**: 1 − 0.27 per egg (50 g). It is held at one egg so the factor cannot go below zero
+  (our assumption).
+- **Soy protein**: 1 − 0.022 × g soy protein. It is held at 30 g so the factor cannot go below
+  zero (our assumption).
+- **Tea and coffee**: the algorithm has a polyphenol factor, but FoodData Central has no
+  polyphenol data. Instead we use measured effects of a cup with a meal, each applied once: tea
+  **62–64%** lower, coffee **35–39%** lower (Hallberg & Rossander 1982; Morck et al. 1983).
+  Smaller amounts have a proportionally smaller effect (our assumption, with a cup taken as
+  200 g).
+- **Iron status**: the algorithm scales absorption by (23 / serum ferritin)^0.94. Your ferritin
+  is not known, so the central estimate uses the algorithm's reference (23 µg/L, modest iron
+  stores). The range uses the same ratios as heme iron (15/23 to 35/23), which corresponds to
+  ferritin of about 36 down to 15 µg/L. With larger iron stores, absorption is lower.
+
+The equations are as transcribed from the original (which has several errata) in Br J Nutr 2009
+(PMID 19709447). We apply phytate and vitamin C as two factors whose product is the paper's
+combined phytate–vitamin C term, so that with no vitamin C the term reduces to the phytate
+factor.
+
+**Check against measured meals.** A cup of cooked lentils alone comes out at about 5% non-heme
+absorption (range roughly 2–10%). Measured legume meals are a few percent: 2.5% from a whole-bean
+meal (Petry et al. 2010) and low absorption from lentil dal (DellaValle et al. 2015). The
+estimate sits toward the upper end because legume polyphenols are not modelled. Adding a glass
+of orange juice raises the lentils' iron absorption about 3×.
+
+**Known limitations.** Polyphenols in foods other than tea and coffee (legumes, red wine, some
+vegetables) are not modelled, so meals rich in them are estimated somewhat high. Alcohol (in
+the algorithm) is not modelled because the nutrient registry does not track it. The algorithm's
+calcium effect also applies to heme iron, which we do not model. Studies over weeks suggest the
+body adapts and the calcium effect is smaller over time.
 
 ## Zinc
 
@@ -234,10 +253,14 @@ range is that figure.
 ## Sources
 
 - Monsen ER et al. Estimation of available dietary iron. Am J Clin Nutr 1978;31:134-41.
-- Monsen ER, Balintfy JL. Calculating dietary iron bioavailability: refinement and
-  computerization. J Am Diet Assoc 1982;80:307-11.
-- Tseng M et al. Adjustment of iron intake for dietary enhancers and inhibitors in population
-  studies. J Nutr 1997;127:1456-68.
+- Hallberg L, Hulthén L. Prediction of dietary iron absorption: an algorithm for calculating
+  absorption and bioavailability of dietary iron. Am J Clin Nutr 2000;71:1147-60. Equations as
+  transcribed in: An algorithm to assess intestinal iron availability for use in dietary
+  surveys. Br J Nutr 2009 (PMID 19709447).
+- Petry N et al. Polyphenols and phytic acid contribute to the low iron bioavailability from
+  common beans in young women. J Nutr 2010;140:1977-82.
+- DellaValle DM et al. Iron absorption from an intrinsically labeled lentil meal is low but
+  upregulated in women with poor iron status. J Nutr 2015.
 - Hallberg L, Brune M, Rossander L. Iron absorption in man: ascorbic acid and dose-dependent
   inhibition by phytate. Am J Clin Nutr 1989;49:140-4.
 - Siegenberg D et al. Ascorbic acid prevents the dose-dependent inhibitory effects of
@@ -272,6 +295,36 @@ range is that figure.
   Choline, Chromium, Copper, Folate, Iodine, Iron, Magnesium, Manganese, Molybdenum, Niacin,
   Pantothenic Acid, Phosphorus, Potassium, Riboflavin, Selenium, Thiamin, Vitamin A,
   Vitamin B6, Vitamin B12, Vitamin C, Vitamin D, Vitamin K, Zinc.
+
+## Goals and the absorption score
+
+Goals (FDA Daily Values, DRIs, Dietary Guidelines limits) are kept exactly as published. They
+are **intake** amounts and already assume typical absorption, so progress toward a goal always
+compares what you **ate** with the goal. Absorbed amounts are never compared with a goal
+directly: about 1–2 mg of absorbed iron is normal on a diet that meets an 18 mg goal.
+
+To show whether your food pairings help, the app computes an **absorption score**:
+
+- expected absorbed = goal × the nutrient's typical absorption from a mixed diet
+- absorption score = absorbed ÷ expected absorbed
+
+A score of 1 means you absorbed what a typical diet meeting the goal would. **Pairing**
+(= score ÷ progress, or absorbed ÷ (eaten × typical absorption)) isolates the effect of what you
+ate together: above 1, your combinations were absorbed better than a typical diet; below 1,
+worse.
+
+Typical absorption comes from the factor table. It is each nutrient's baseline (for example
+zinc 30%, the moderate WHO band; calcium 25%; protein 92%; vitamin A and folate 1.0), plus two
+rows of its own:
+
+- **Iron 16%** (14–18%), NIH ODS for mixed diets with meat, seafood and vitamin C.
+- **B12 50%**, NIH ODS for normal food doses.
+
+Copper's typical absorption is read off its intake curve at the goal amount.
+
+Limits, nutrients counted as eaten (calories, fiber, water) and carbohydrate (whose goal
+includes fiber, which is not absorbed) have no score. The AI helper closes eaten-versus-goal
+gaps and, among foods that do, prefers pairings that raise the absorption score.
 
 ## Changing a factor
 

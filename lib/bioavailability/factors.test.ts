@@ -27,7 +27,7 @@ describe("absorption factor rows", () => {
 
   it("keep absorption fractions at or below 100%", () => {
     const notFractions =
-      /(_g|_ug|_mg|ef_slope|ef_cap|ratio_cutoff|store_scale|per_g_protein|mg_per_100g)/;
+      /(^hh_|_g|_ug|_mg|ef_slope|ef_cap|ratio_cutoff|store_scale|per_g_protein|mg_per_100g)/;
     for (const r of FACTOR_ROWS) {
       if (r.nutrient === "phytate" || notFractions.test(r.key)) continue;
       expect(r.high, `${r.nutrient}/${r.key}`).toBeLessThanOrEqual(1);

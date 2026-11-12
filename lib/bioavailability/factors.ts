@@ -31,8 +31,6 @@ export interface FactorRow {
 
 const MONSEN_1978 =
   "Monsen ER et al. Estimation of available dietary iron. Am J Clin Nutr 1978;31:134-41";
-const MONSEN_BALINTFY_1982 =
-  "Monsen ER, Balintfy JL. Calculating dietary iron bioavailability: refinement and computerization. J Am Diet Assoc 1982;80:307-11";
 const HALLBERG_1989 =
   "Hallberg L, Brune M, Rossander L. Iron absorption in man: ascorbic acid and dose-dependent inhibition by phytate. Am J Clin Nutr 1989;49:140-4";
 const HALLBERG_1991 =
@@ -41,8 +39,8 @@ const HALLBERG_ROSSANDER_1982 =
   "Hallberg L, Rossander L. Effect of different drinks on the absorption of non-heme iron from composite meals. Hum Nutr Appl Nutr 1982;36:116-23";
 const MORCK_1983 =
   "Morck TA, Lynch SR, Cook JD. Inhibition of food iron absorption by coffee. Am J Clin Nutr 1983;37:416-20";
-const TSENG_1997 =
-  "Tseng M et al. Adjustment of iron intake for dietary enhancers and inhibitors in population studies. J Nutr 1997;127:1456-68";
+const HALLBERG_HULTHEN_2000 =
+  "Hallberg L, Hulthén L. Prediction of dietary iron absorption: an algorithm for calculating absorption and bioavailability of dietary iron. Am J Clin Nutr 2000;71:1147-60 (equations as transcribed in Br J Nutr 2009, PMID 19709447)";
 const FAO_WHO_2004_ZINC =
   "FAO/WHO. Vitamin and mineral requirements in human nutrition, 2nd ed. (2004), ch. 12 Zinc, Tables 54-55";
 const ODS = (sheet: string) =>
@@ -100,27 +98,15 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
       "Fraction of heme iron absorbed: 23% at 500 mg iron stores; 15% (1000 mg stores) to 35% (no stores).",
     source: MONSEN_1978,
   },
-  // ----- Iron: non-heme, enhancers (Monsen & Balintfy) ----------------------
+  // ----- Iron: non-heme (Hallberg & Hulthén 2000) --------------------------
+  // Non-heme absorption = basal x phytate x vitamin C x meat x calcium x egg x soy x tea x coffee
+  // x iron status. Each factor is applied once, starting from an inhibitor-free meal.
   fixed(
     "iron",
-    "nonheme_base",
-    0.03,
-    "Non-heme iron absorbed from a meal with no enhancers (500 mg iron stores).",
-    MONSEN_BALINTFY_1982,
-  ),
-  fixed(
-    "iron",
-    "nonheme_ef_slope",
-    0.0893,
-    "Slope of the enhancer curve: absorption = base + slope x ln((EF + 100) / 100), EF = mg vitamin C + g meat/fish/poultry.",
-    MONSEN_BALINTFY_1982,
-  ),
-  fixed(
-    "iron",
-    "nonheme_ef_cap",
-    75,
-    "Enhancing-factor units (mg vitamin C + g meat/fish/poultry) above which absorption no longer rises (8%).",
-    MONSEN_BALINTFY_1982,
+    "hh_basal_absorption",
+    0.221,
+    "Non-heme iron absorbed from an inhibitor-free wheat roll (22.1%): the algorithm's starting point, at its reference iron status (serum ferritin 23 µg/L).",
+    HALLBERG_HULTHEN_2000,
   ),
   {
     nutrient: "iron",
@@ -129,9 +115,44 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
     low: 0.65,
     high: 1.52,
     description:
-      "Scales non-heme absorption for iron status, using the same ratios as heme (15/23 and 35/23) because iron status is not known.",
-    source: `${MONSEN_1978}; ${ASSUMPTION}`,
+      "Scales non-heme absorption for iron status, which is not known. Central = the algorithm's reference (ferritin 23 µg/L); the range uses the same ratios as heme iron (15/23 and 35/23), about ferritin 36 to 15 µg/L through the algorithm's ferritin exponent (0.94).",
+    source: `${HALLBERG_HULTHEN_2000}; ${MONSEN_1978}; ${ASSUMPTION}`,
   },
+  fixed(
+    "iron",
+    "phytate_p_share",
+    0.2816,
+    "Phosphorus share of phytic acid by mass (6 x 30.97 / 660.04), to convert phytate to phytate phosphorus.",
+    "Phytic acid formula C6H18O24P6 (molar mass 660.04 g/mol)",
+  ),
+  fixed(
+    "iron",
+    "hh_phytate_exponent",
+    0.3,
+    "Phytate factor = (1 + mg phytate phosphorus)^-0.3: 28% lower at 2 mg, 62% at 25 mg, 81% at 250 mg (measured: 18%, 64%, 82%).",
+    `${HALLBERG_HULTHEN_2000}; ${HALLBERG_1989}`,
+  ),
+  fixed(
+    "iron",
+    "hh_aa_linear",
+    0.01,
+    "Vitamin C factor = 1 + 0.01 x mg vitamin C + 0.01 x log10(mg phytate phosphorus + 1) x (mg vitamin C + 1)^0.8875. Vitamin C raises absorption and offsets part of the phytate effect.",
+    HALLBERG_HULTHEN_2000,
+  ),
+  fixed(
+    "iron",
+    "hh_aa_phytate_coef",
+    0.01,
+    "Coefficient of the vitamin C x phytate term in the vitamin C factor.",
+    HALLBERG_HULTHEN_2000,
+  ),
+  fixed(
+    "iron",
+    "hh_aa_exponent",
+    0.8875,
+    "Exponent on (mg vitamin C + 1) in the vitamin C x phytate term.",
+    HALLBERG_HULTHEN_2000,
+  ),
   {
     nutrient: "iron",
     key: "mfp_grams_per_g_protein",
@@ -142,41 +163,69 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
       "Grams of cooked meat, poultry or fish per gram of protein (cooked lean meats are about 20-30% protein), used to estimate the meat content of mixed dishes.",
     source: `USDA FoodData Central SR Legacy cooked meats; ${ASSUMPTION}`,
   },
-  // ----- Iron: non-heme, inhibitors -----------------------------------------
   fixed(
     "iron",
-    "phytate_p_share",
-    0.2816,
-    "Phosphorus share of phytic acid by mass (6 x 30.97 / 660.04), to convert phytate to phytate phosphorus.",
-    "Phytic acid formula C6H18O24P6 (molar mass 660.04 g/mol)",
+    "hh_mfp_coef",
+    0.00628,
+    "Meat factor = 1 + 0.00628 x g meat, poultry or fish x (1 + 0.006 x mg phytate phosphorus).",
+    HALLBERG_HULTHEN_2000,
   ),
   fixed(
     "iron",
-    "phytate_p_mg:0",
-    1,
-    "Non-heme iron absorption remaining with no phytate.",
-    HALLBERG_1989,
+    "hh_mfp_phytate_coef",
+    0.006,
+    "Coefficient of phytate phosphorus in the meat factor (meat counteracts phytate more when there is more of it).",
+    HALLBERG_HULTHEN_2000,
   ),
   fixed(
     "iron",
-    "phytate_p_mg:2",
-    0.82,
-    "Non-heme iron absorption remaining with 2 mg phytate phosphorus (18% lower).",
-    HALLBERG_1989,
+    "hh_calcium_min",
+    0.4081,
+    "Calcium factor = 0.4081 + 0.5919 / (1 + 10^(-2.919 x (2.022 - log10(mg calcium + 1)))): about 47% lower at 165 mg and 57% at 300 mg, levelling off at 59% (measured: 50-60%).",
+    `${HALLBERG_HULTHEN_2000}; ${HALLBERG_1991}`,
   ),
   fixed(
     "iron",
-    "phytate_p_mg:25",
-    0.36,
-    "Non-heme iron absorption remaining with 25 mg phytate phosphorus (64% lower).",
-    HALLBERG_1989,
+    "hh_calcium_span",
+    0.5919,
+    "Span of the calcium factor (1 - its minimum).",
+    HALLBERG_HULTHEN_2000,
   ),
   fixed(
     "iron",
-    "phytate_p_mg:250",
-    0.18,
-    "Non-heme iron absorption remaining with 250 mg phytate phosphorus (82% lower).",
-    HALLBERG_1989,
+    "hh_calcium_slope",
+    2.919,
+    "Steepness of the calcium factor curve.",
+    HALLBERG_HULTHEN_2000,
+  ),
+  fixed(
+    "iron",
+    "hh_calcium_midpoint_log",
+    2.022,
+    "log10 of the calcium amount (about 105 mg) at the middle of the calcium effect.",
+    HALLBERG_HULTHEN_2000,
+  ),
+  fixed("iron", "hh_egg_coef", 0.27, "Egg factor = 1 - 0.27 per egg.", HALLBERG_HULTHEN_2000),
+  fixed(
+    "iron",
+    "egg_grams",
+    50,
+    "Grams in one large egg, to count eggs. The egg effect is held at one egg so the linear factor cannot go below zero.",
+    `USDA FoodData Central (1 large egg = 50 g); ${ASSUMPTION} (one-egg cap)`,
+  ),
+  fixed(
+    "iron",
+    "hh_soy_coef",
+    0.022,
+    "Soy factor = 1 - 0.022 x g soy protein.",
+    HALLBERG_HULTHEN_2000,
+  ),
+  fixed(
+    "iron",
+    "soy_protein_cap_g",
+    30,
+    "Grams of soy protein beyond which the soy effect is held, so the linear factor cannot go below zero.",
+    ASSUMPTION,
   ),
   {
     nutrient: "iron",
@@ -184,7 +233,8 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
     value: 0.38,
     low: 0.36,
     high: 0.38,
-    description: "Non-heme iron absorption remaining when tea is drunk with a meal (62-64% lower).",
+    description:
+      "Non-heme iron absorption remaining when tea is drunk with a meal (62-64% lower). Used instead of the algorithm's polyphenol term because FoodData Central has no polyphenol data.",
     source: `${HALLBERG_ROSSANDER_1982}; ${MORCK_1983}`,
   },
   {
@@ -194,7 +244,7 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
     low: 0.61,
     high: 0.65,
     description:
-      "Non-heme iron absorption remaining when coffee is drunk with a meal (35-39% lower).",
+      "Non-heme iron absorption remaining when coffee is drunk with a meal (35-39% lower). Used instead of the algorithm's polyphenol term.",
     source: `${HALLBERG_ROSSANDER_1982}; ${MORCK_1983}`,
   },
   fixed(
@@ -204,33 +254,6 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
     "A cup of tea or coffee (g). Smaller amounts have a proportionally smaller effect.",
     ASSUMPTION,
   ),
-  fixed(
-    "iron",
-    "calcium_mg:0",
-    1,
-    "Non-heme iron absorption remaining with no calcium in the meal.",
-    HALLBERG_1991,
-  ),
-  {
-    nutrient: "iron",
-    key: "calcium_mg:165",
-    value: 0.45,
-    low: 0.4,
-    high: 0.5,
-    description:
-      "Non-heme iron absorption remaining with 165 mg calcium in the meal (50-60% lower); the effect is dose-related up to about 300 mg.",
-    source: HALLBERG_1991,
-  },
-  {
-    nutrient: "iron",
-    key: "calcium_mg:600",
-    value: 0.45,
-    low: 0.4,
-    high: 0.5,
-    description:
-      "Non-heme iron absorption remaining with 300-600 mg calcium in the meal (50-60% lower, a plateau).",
-    source: HALLBERG_1991,
-  },
 
   // ----- Phytate content estimates (mg phytic acid per 100 g dry matter) ----
   fixed("phytate", "mg_per_100g_dry:none", 0, "No phytate.", ASSUMPTION),
@@ -738,7 +761,25 @@ export const FACTOR_ROWS: readonly FactorRow[] = [
     description: "Cholesterol absorbed (women 53%, men 58%, SD about 12%).",
     source: BOSNER_1999,
   },
-];
 
-/** Cited in docs/bioavailability.md for applying inhibitors on top of the Monsen model. */
-export const IRON_MODEL_PRECEDENT = TSENG_1997;
+  // ----- Typical absorption, for the absorption score -----------------------
+  // Absorption expected from a typical mixed diet. Most nutrients reuse their baseline row (see
+  // lib/bioavailability/score.ts); these two have no single baseline in the rules above.
+  {
+    nutrient: "iron",
+    key: "typical",
+    value: 0.16,
+    low: 0.14,
+    high: 0.18,
+    description:
+      "Iron absorbed from a typical mixed diet with meat, seafood and vitamin C (14-18%).",
+    source: ODS("Iron"),
+  },
+  fixed(
+    "vitamin_b12",
+    "typical",
+    0.5,
+    "B12 absorbed from food at normal doses (about 50% below 1-2 mcg per meal).",
+    ODS("Vitamin B12"),
+  ),
+];

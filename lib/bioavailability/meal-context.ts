@@ -30,6 +30,9 @@ export interface MealContext {
   fatG: number;
   teaG: number;
   coffeeG: number;
+  eggG: number;
+  /** Protein from soy foods (g); soy protein inhibits non-heme iron absorption. */
+  soyProteinG: number;
   zincMg: number;
   b12Ug: number;
   /** Estimated phytic acid in the meal (mg). */
@@ -98,6 +101,10 @@ export function buildMealContext(
     fatG: sum(mealFoods, (f) => amount(f, "fat")),
     teaG: sum(mealFoods, (f) => (f.food.tags.foodGroup === "tea" ? f.food.grams : 0)),
     coffeeG: sum(mealFoods, (f) => (f.food.tags.foodGroup === "coffee" ? f.food.grams : 0)),
+    eggG: sum(mealFoods, (f) => (f.food.tags.foodGroup === "egg" ? f.food.grams : 0)),
+    soyProteinG: sum(mealFoods, (f) =>
+      f.food.tags.foodGroup === "soy" ? amount(f, "protein") : 0,
+    ),
     zincMg: sum(mealFoods, (f) => amount(f, "zinc")),
     b12Ug: sum(mealFoods, (f) => amount(f, "vitamin_b12")),
     phytateMg,

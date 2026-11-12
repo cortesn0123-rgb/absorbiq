@@ -82,69 +82,105 @@ interface NonhemeModel {
   reasons: string[];
 }
 
-/** Non-heme iron absorption for the whole meal: Monsen–Balintfy enhancers, then inhibitors. */
+/** One Hallberg & Hulthén factor per meal component; each multiplies absorption once. */
+interface NonhemeFactors {
+  phytate: number;
+  vitaminC: number;
+  meat: number;
+  calcium: number;
+  egg: number;
+  soy: number;
+  tea: number;
+  coffee: number;
+}
+
+export function nonhemeFactors(ctx: MealContext, table: FactorTable, s: Scenario): NonhemeFactors {
+  const f = (key: string) => table.get("iron", key).value;
+  const phytateP = contentFor(ctx.phytateMg, s) * f("phytate_p_share");
+  const aa = ctx.vitaminCMg;
+  const eggs = Math.min(1, ctx.eggG / f("egg_grams"));
+  const soyProtein = Math.min(ctx.soyProteinG, f("soy_protein_cap_g"));
+  const cup = f("drink_reference_g");
+  return {
+    phytate: (1 + phytateP) ** -f("hh_phytate_exponent"),
+    vitaminC:
+      aa > 0
+        ? 1 +
+          f("hh_aa_linear") * aa +
+          f("hh_aa_phytate_coef") * Math.log10(phytateP + 1) * (aa + 1) ** f("hh_aa_exponent")
+        : 1,
+    meat: 1 + f("hh_mfp_coef") * ctx.mfpGrams[s] * (1 + f("hh_mfp_phytate_coef") * phytateP),
+    calcium:
+      f("hh_calcium_min") +
+      f("hh_calcium_span") /
+        (1 +
+          10 **
+            (-f("hh_calcium_slope") *
+              (f("hh_calcium_midpoint_log") - Math.log10(ctx.calciumMg + 1)))),
+    egg: 1 - f("hh_egg_coef") * eggs,
+    soy: 1 - f("hh_soy_coef") * soyProtein,
+    tea: drinkRemaining(table.get("iron", "tea_remaining"), ctx.teaG, s, cup),
+    coffee: drinkRemaining(table.get("iron", "coffee_remaining"), ctx.coffeeG, s, cup),
+  };
+}
+
+/**
+ * Non-heme iron absorption for the whole meal (Hallberg & Hulthén 2000): absorption from an
+ * inhibitor-free meal, times one factor per enhancer or inhibitor, times iron status.
+ */
 export function nonhemeIron(ctx: MealContext, table: FactorTable): NonhemeModel {
-  const base = table.get("iron", "nonheme_base");
-  const slope = table.get("iron", "nonheme_ef_slope");
-  const cap = table.get("iron", "nonheme_ef_cap");
+  const basal = table.get("iron", "hh_basal_absorption");
   const store = table.get("iron", "nonheme_store_scale");
-  const pShare = table.get("iron", "phytate_p_share");
-  const tea = table.get("iron", "tea_remaining");
-  const coffee = table.get("iron", "coffee_remaining");
-  const cup = table.get("iron", "drink_reference_g").value;
-
-  const ef = (s: Scenario) => Math.min(pick(cap, s), ctx.vitaminCMg + ctx.mfpGrams[s]);
-  const enhanced = (s: Scenario) => pick(base, s) + pick(slope, s) * Math.log((ef(s) + 100) / 100);
-  const phytate = (s: Scenario) =>
-    curveAt(table, "iron", "phytate_p_mg", contentFor(ctx.phytateMg, s) * pShare.value, s, "log");
-  const teaEffect = (s: Scenario) => drinkRemaining(tea, ctx.teaG, s, cup);
-  const coffeeEffect = (s: Scenario) => drinkRemaining(coffee, ctx.coffeeG, s, cup);
-  const calcium = (s: Scenario) => curveAt(table, "iron", "calcium_mg", ctx.calciumMg, s);
-
+  const product = (x: NonhemeFactors) =>
+    x.phytate * x.vitaminC * x.meat * x.calcium * x.egg * x.soy * x.tea * x.coffee;
   const fraction = triple(
-    (s) => enhanced(s) * pick(store, s) * phytate(s) * teaEffect(s) * coffeeEffect(s) * calcium(s),
+    (s) => pick(basal, s) * pick(store, s) * product(nonhemeFactors(ctx, table, s)),
   );
 
-  const reasons: string[] = [];
-  const atCap = ef("value") >= cap.value;
-  if (ctx.vitaminCMg >= 1) {
+  const x = nonhemeFactors(ctx, table, "value");
+  const lower = (factor: number) => `about ${pct(1 - factor)}`;
+  const times = (factor: number) => `about ${num(factor)}x`;
+  const reasons = [
+    `Non-heme iron uses the Hallberg & Hulthén (2000) algorithm: ${pct(basal.value)} from a meal with nothing that helps or hinders, then each factor below is applied once.`,
+  ];
+  if (x.phytate < 0.99) {
     reasons.push(
-      `Vitamin C in this meal (${num(ctx.vitaminCMg)} mg) increases non-heme iron absorption${atCap ? " (at its maximum effect)" : ""}.`,
+      `Phytate in this meal (about ${num(ctx.phytateMg.value)} mg, from ${ctx.phytateSources.join(", ")}) lowers non-heme iron absorption by ${lower(x.phytate)}.`,
     );
   }
-  if (ctx.mfpGrams.value >= 1) {
+  if (x.vitaminC > 1.01) {
     reasons.push(
-      `Meat, poultry or fish in this meal (about ${num(ctx.mfpGrams.value)} g) increases non-heme iron absorption.`,
+      `Vitamin C in this meal (${num(ctx.vitaminCMg)} mg) raises non-heme iron absorption ${times(x.vitaminC)}${x.phytate < 0.99 ? ", partly offsetting the phytate" : ""}.`,
     );
   }
-  if (ctx.vitaminCMg < 1 && ctx.mfpGrams.value < 1) {
+  if (x.meat > 1.01) {
     reasons.push(
-      `No vitamin C or meat in this meal to boost non-heme iron absorption, so it starts from a low baseline (${pct(base.value)}).`,
+      `Meat, poultry or fish in this meal (about ${num(ctx.mfpGrams.value)} g) raises non-heme iron absorption ${times(x.meat)}.`,
     );
   }
-  const phytateEffect = phytate("value");
-  if (phytateEffect < 0.99) {
+  if (x.vitaminC <= 1.01 && x.meat <= 1.01) {
+    reasons.push("No vitamin C or meat in this meal to raise non-heme iron absorption.");
+  }
+  if (x.calcium < 0.99) {
     reasons.push(
-      `Phytate in this meal (about ${num(ctx.phytateMg.value)} mg, from ${ctx.phytateSources.join(", ")}) lowers non-heme iron absorption by about ${pct(1 - phytateEffect)}.`,
+      `Calcium in this meal (${num(ctx.calciumMg)} mg) lowers non-heme iron absorption by ${lower(x.calcium)}.`,
     );
   }
-  if (ctx.teaG > 0) {
+  if (x.egg < 1)
+    reasons.push(`Egg in this meal lowers non-heme iron absorption by ${lower(x.egg)}.`);
+  if (x.soy < 1) {
     reasons.push(
-      `Tea with this meal lowers non-heme iron absorption by about ${pct(1 - teaEffect("value"))}.`,
+      `Soy protein in this meal (${num(ctx.soyProteinG)} g) lowers non-heme iron absorption by ${lower(x.soy)}.`,
     );
   }
-  if (ctx.coffeeG > 0) {
-    reasons.push(
-      `Coffee with this meal lowers non-heme iron absorption by about ${pct(1 - coffeeEffect("value"))}.`,
-    );
+  if (x.tea < 1)
+    reasons.push(`Tea with this meal lowers non-heme iron absorption by ${lower(x.tea)}.`);
+  if (x.coffee < 1) {
+    reasons.push(`Coffee with this meal lowers non-heme iron absorption by ${lower(x.coffee)}.`);
   }
-  const calciumEffect = calcium("value");
-  if (calciumEffect < 0.99) {
-    reasons.push(
-      `Calcium in this meal (${num(ctx.calciumMg)} mg) lowers non-heme iron absorption by about ${pct(1 - calciumEffect)}.`,
-    );
-  }
-  reasons.push(`Non-heme iron in this meal: about ${rangeText(fraction)} absorbed.`);
+  reasons.push(
+    `Non-heme iron in this meal: about ${rangeText(fraction)} absorbed, assuming modest iron stores (serum ferritin about 23 µg/L); more stores mean less absorption.`,
+  );
   return { fraction, reasons };
 }
 
