@@ -20,6 +20,7 @@ import {
   type Unit,
   type UpperLimit,
 } from "./registry";
+import { SWEAT_ELECTROLYTES_MG_PER_L, estimateSweatLoss, type TrainingSession } from "./training";
 
 export const ACTIVITY_LEVELS = ["inactive", "low_active", "active", "very_active"] as const;
 export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
@@ -44,8 +45,8 @@ export interface TargetInput {
   prepregnancyWeightKg?: number | null;
   /** Lactation only: months since giving birth. */
   lactationMonthsPostpartum?: number | null;
-  /** Athletic tier: today's sweat loss in kg (body mass lost during training). */
-  sweatLossKg?: number | null;
+  /** Athletic tier: today's training sessions, used to add sweat losses on training days. */
+  trainingToday?: readonly TrainingSession[];
 }
 
 export interface DailyTarget {
@@ -244,11 +245,16 @@ export const ATHLETIC_CARB_BANDS = [
 
 /** ACSM 2007: drink about 1.5 L per kg of body mass lost to sweat. */
 export const SWEAT_REPLACEMENT_ML_PER_KG = 1500;
+
 /**
- * Mean athlete sweat sodium ≈ 40 mmol/L ≈ 920 mg/L (Baker LB. Sports Med. 2017;47(Suppl 1):111-128).
- * 1 kg of sweat ≈ 1 L.
+ * Iron for athletes. Training may raise iron needs by 30–70% in female athletes and ~70% in
+ * endurance runners (NASEM 2001 iron report; Thomas et al. 2016). Not an official recommendation.
+ * Multipliers apply to the Average RDA; pregnancy and lactation keep their DRI.
  */
-export const SWEAT_SODIUM_MG_PER_KG = 920;
+export const ATHLETIC_IRON = {
+  defaultMultiplier: 1.3,
+  femaleEnduranceMultiplier: 1.7,
+} as const;
 
 export function athleticCarbBand(hoursPerDay: number) {
   return ATHLETIC_CARB_BANDS.find((b) => hoursPerDay < b.maxHoursExclusive)!;
@@ -291,6 +297,18 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
         )
       : estimatedEnergyRequirement(input, input.activityLevel);
   const E = energy.kcal;
+
+  // Sweat losses only adjust the Athletic tier, and only on training days.
+  const sweat = estimateSweatLoss(input.trainingToday ?? []);
+  const sweatNotes = (message: string): string[] => {
+    if (sweat.kg <= 0) return [];
+    return sweat.estimatedFromTime
+      ? [
+          message,
+          "Sweat loss is estimated at ~1 L per training hour; weigh yourself before and after training for a better figure.",
+        ]
+      : [message];
+  };
 
   const lifeStageProteinGPerKg = (): number => {
     if (lifeStage === "lactating") return 1.3;
@@ -395,26 +413,70 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
         return { value: round((0.1 * E) / 9), notes: [] };
 
       case "water-athletic": {
-        const ai = lookupDri(waterTable(), input.sex, input.age, lifeStage);
-        const sweat = Math.max(input.sweatLossKg ?? 0, 0);
+        const ai = lookupDri(driTable("water"), input.sex, input.age, lifeStage);
+        const extra = sweat.kg * SWEAT_REPLACEMENT_ML_PER_KG;
         return {
-          value: round(ai + sweat * SWEAT_REPLACEMENT_ML_PER_KG),
-          notes:
-            sweat > 0
-              ? [`Includes ${round(sweat * SWEAT_REPLACEMENT_ML_PER_KG)} mL to replace sweat loss.`]
-              : [],
+          value: round(ai + extra),
+          notes: sweatNotes(`Includes ${round(extra)} mL to replace sweat loss.`),
         };
       }
       case "sodium-athletic": {
-        const sweat = Math.max(input.sweatLossKg ?? 0, 0);
+        const extra = sweat.kg * SWEAT_ELECTROLYTES_MG_PER_L.sodium;
         return {
-          value: round(2300 + sweat * SWEAT_SODIUM_MG_PER_KG),
-          notes:
-            sweat > 0
-              ? [
-                  `Raised by ${round(sweat * SWEAT_SODIUM_MG_PER_KG)} mg for estimated sweat sodium losses (varies widely by person).`,
-                ]
-              : [],
+          value: round(2300 + extra),
+          notes: sweatNotes(`Raised by ${round(extra)} mg for estimated sweat sodium losses.`),
+        };
+      }
+      case "chloride-athletic": {
+        const ai = lookupDri(driTable("chloride"), input.sex, input.age, lifeStage);
+        const extra = sweat.kg * SWEAT_ELECTROLYTES_MG_PER_L.chloride;
+        const ul = lookupDri(NUTRIENTS.chloride.ul!.table, input.sex, input.age, lifeStage);
+        const notes = sweatNotes(
+          `Raised by ${round(extra)} mg for estimated sweat chloride losses.`,
+        );
+        if (ai + extra > ul) {
+          notes.push(
+            `Capped at the ${ul} mg upper limit; ask a sports dietitian about replacing heavy sweat losses.`,
+          );
+        }
+        return { value: round(Math.min(ai + extra, ul)), notes };
+      }
+      case "potassium-athletic": {
+        const ai = lookupDri(driTable("potassium"), input.sex, input.age, lifeStage);
+        const extra = sweat.kg * SWEAT_ELECTROLYTES_MG_PER_L.potassium;
+        return {
+          value: round(ai + extra),
+          notes: sweatNotes(`Raised by ${round(extra)} mg for estimated sweat potassium losses.`),
+        };
+      }
+
+      case "iron-athletic": {
+        const rda = lookupDri(driTable("iron"), input.sex, input.age, lifeStage);
+        const ul = lookupDri(NUTRIENTS.iron.ul!.table, input.sex, input.age, lifeStage);
+        if (lifeStage !== "none") {
+          return {
+            value: rda,
+            notes: [
+              "Pregnancy and lactation use the DRI. Ask your clinician whether training changes your iron needs.",
+            ],
+          };
+        }
+        const isFemale = input.sex === "female";
+        const multiplier =
+          isFemale && input.trainingType === "endurance"
+            ? ATHLETIC_IRON.femaleEnduranceMultiplier
+            : ATHLETIC_IRON.defaultMultiplier;
+        const max = isFemale
+          ? ATHLETIC_IRON.femaleEnduranceMultiplier
+          : ATHLETIC_IRON.defaultMultiplier;
+        return {
+          value: round(Math.min(rda * multiplier, ul), 1),
+          min: rda,
+          max: round(Math.min(rda * max, ul), 1),
+          notes: [
+            `Training may raise iron needs by 30–70%; this is not an official recommendation. Stays under the ${ul} mg upper limit.`,
+            "Ask a doctor about a ferritin blood test before taking iron supplements.",
+          ],
         };
       }
     }
@@ -463,8 +525,9 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
   return result;
 }
 
-function waterTable() {
-  const average = NUTRIENTS.water.tiers.average;
-  if (average.type !== "dri") throw new Error("Registry: water average tier must be a DRI table.");
+/** The Average-tier DRI table for a nutrient (used as the base for Athletic rules). */
+function driTable(id: NutrientId) {
+  const average = NUTRIENTS[id].tiers.average;
+  if (average.type !== "dri") throw new Error(`Registry: ${id} average tier must be a DRI table.`);
   return average.table;
 }

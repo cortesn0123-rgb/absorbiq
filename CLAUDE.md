@@ -79,6 +79,13 @@ The user picks one tier.
 
 Average and Athletic limits from the **Dietary Guidelines for Americans 2025–2030**: saturated fat under 10% of calories; added sugars at most **10 g per meal** (summed per meal; flag any meal over). Breakfast, lunch and dinner are one meal each; **each snack is checked on its own** (Phase 2: food logs get a snack number or timestamp so snacks can be told apart, and `lib/nutrients/meal-limits.ts` groups by meal occasion instead of slot).
 
+Athletic micronutrient rules (everything else = Average):
+
+- **Iron:** Average RDA +30% (female endurance +70%; women may go up to +70%), never above the 45 mg UL; pregnancy/lactation keep the DRI. Label as not an official recommendation and suggest a ferritin test.
+- **Vitamin D:** intake target stays at the RDA; note that athlete studies treat blood 25(OH)D ≥ 30 ng/mL as adequate and suggest getting tested.
+- **Sodium, chloride, potassium, water:** add estimated sweat losses on training days (measured sweat loss, else ~1 L/h). Chloride is capped at its UL.
+- **Low energy availability:** flag days under ~30 kcal/kg fat-free mass (`lib/nutrients/energy-availability.ts`), noting the threshold is debated.
+
 Values come from the official sources cited in the registry (FDA 21 CFR 101.9, NASEM DRI tables, NASEM 2023 energy equations, DGA 2025–2030). Verify any new value against its source; do not substitute numbers from memory.
 
 ### Nutrient registry (single source of truth)

@@ -52,7 +52,10 @@ export type ComputedRule =
   | "fat-athletic"
   | "sat-fat-10pct"
   | "water-athletic"
-  | "sodium-athletic";
+  | "sodium-athletic"
+  | "chloride-athletic"
+  | "potassium-athletic"
+  | "iron-athletic";
 
 /** Period a target or limit applies to. Almost everything is per day. */
 export type Period = "day" | "meal";
@@ -168,6 +171,10 @@ const DRI_ENERGY = "NASEM, Dietary Reference Intakes for Energy (2023)";
 const DGA = "USDA/HHS, Dietary Guidelines for Americans 2025–2030 (January 2026)";
 const SPORTS =
   "Thomas DT, Erdman KA, Burke LM. ACSM/AND/DC joint position: Nutrition and Athletic Performance. Med Sci Sports Exerc. 2016;48(3):543-568";
+const SWEAT =
+  "Baker LB. Sweating rate and sweat sodium concentration in athletes. Sports Med. 2017;47(Suppl 1):111-128; Baker LB. Physiology of sweat gland function. Temperature. 2019;6(3):211-259";
+const ATHLETE_VITAMIN_D =
+  "Athlete studies use serum 25(OH)D ≥ 30 ng/mL (75 nmol/L) as sufficient, e.g. Shuler FD et al. Sports health benefits of vitamin D. Sports Health. 2012;4(6):496-501";
 
 // ---------------------------------------------------------------------------
 // Table builders. Arrays are ordered:
@@ -221,7 +228,7 @@ const DGA_ADDED_SUGARS: TierValue = {
 };
 
 const ATHLETIC_MICRO_NOTE =
-  "Athletic tier uses the Average DRI: sports-nutrition position stands do not set higher micronutrient targets for athletes.";
+  "Athletic tier uses the Average DRI: athletes, including female athletes, generally meet micronutrient needs when energy intake is adequate (iron is the exception).";
 
 /** Micronutrients: the Athletic tier uses the same DRI as Average (no consensus for higher needs). */
 function micro(fdaValue: number, table: DriTable, basis: "RDA" | "AI"): Record<Tier, TierValue> {
@@ -230,6 +237,14 @@ function micro(fdaValue: number, table: DriTable, basis: "RDA" | "AI"): Record<T
     average: { type: "dri", table, basis },
     athletic: { type: "dri", table, basis, note: ATHLETIC_MICRO_NOTE },
   };
+}
+
+/** Replace the Athletic tier of a set of tier values. */
+function withAthletic(
+  tiers: Record<Tier, TierValue>,
+  athletic: TierValue,
+): Record<Tier, TierValue> {
+  return { ...tiers, athletic };
 }
 
 function none(reason: string): Record<Tier, TierValue> {
@@ -295,13 +310,17 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
     fdcUnit: "UG",
     fdcNumbers: ["328"],
     kind: "target",
-    tiers: micro(
-      20,
-      dri([15, 15, 15, 15, 20], [15, 15, 15, 15, 20], [15, 15, 15], [15, 15, 15]),
-      "RDA",
-    ),
+    tiers: (() => {
+      const table = dri([15, 15, 15, 15, 20], [15, 15, 15, 15, 20], [15, 15, 15], [15, 15, 15]);
+      return withAthletic(micro(20, table, "RDA"), {
+        type: "dri",
+        table,
+        basis: "RDA",
+        note: "Intake target is the RDA. Athlete studies treat a blood 25(OH)D of 30 ng/mL or more as adequate; ask a doctor about getting tested.",
+      });
+    })(),
     ul: { table: flat(100), scope: "total" },
-    citation: `${DRI_CA_D}; ${FDA_DV}`,
+    citation: `${DRI_CA_D}; ${ATHLETE_VITAMIN_D}; ${FDA_DV}`,
     note: "RDA assumes minimal sun exposure.",
   },
   vitamin_e: {
@@ -532,9 +551,17 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
     fdcUnit: "MG",
     fdcNumbers: ["303"],
     kind: "target",
-    tiers: micro(18, dri([11, 8, 8, 8, 8], [15, 18, 18, 8, 8], [27, 27, 27], [10, 9, 9]), "RDA"),
+    tiers: withAthletic(
+      micro(18, dri([11, 8, 8, 8, 8], [15, 18, 18, 8, 8], [27, 27, 27], [10, 9, 9]), "RDA"),
+      {
+        type: "computed",
+        rule: "iron-athletic",
+        basis:
+          "Average RDA +30% (women up to +70% for endurance), below the UL; not an official recommendation",
+      },
+    ),
     ul: { table: flat(45), scope: "total" },
-    citation: `${DRI_A_K_TRACE}; ${FDA_DV}`,
+    citation: `${DRI_A_K_TRACE}; ${SPORTS}; ${FDA_DV}`,
     note: "NASEM notes vegetarians may need 1.8x the RDA because non-heme iron is less bioavailable.",
   },
   magnesium: {
@@ -577,18 +604,25 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
     fdcUnit: "MG",
     fdcNumbers: ["306"],
     kind: "target",
-    tiers: micro(
-      4700,
-      dri(
-        [3000, 3400, 3400, 3400, 3400],
-        [2300, 2600, 2600, 2600, 2600],
-        [2600, 2900, 2900],
-        [2500, 2800, 2800],
+    tiers: withAthletic(
+      micro(
+        4700,
+        dri(
+          [3000, 3400, 3400, 3400, 3400],
+          [2300, 2600, 2600, 2600, 2600],
+          [2600, 2900, 2900],
+          [2500, 2800, 2800],
+        ),
+        "AI",
       ),
-      "AI",
+      {
+        type: "computed",
+        rule: "potassium-athletic",
+        basis: "AI plus estimated sweat potassium losses",
+      },
     ),
     ul: null,
-    citation: `${DRI_NA_K}; ${FDA_DV}`,
+    citation: `${DRI_NA_K}; ${SWEAT}; ${FDA_DV}`,
   },
   sodium: {
     id: "sodium",
@@ -608,7 +642,7 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
       },
     },
     ul: null,
-    citation: `${DRI_NA_K}; ${FDA_DV}`,
+    citation: `${DRI_NA_K}; ${SWEAT}; ${FDA_DV}`,
     note: "Limit is the Chronic Disease Risk Reduction intake (CDRR). The AI for adequacy is 1500 mg.",
   },
   chloride: {
@@ -619,18 +653,25 @@ export const NUTRIENTS: Record<NutrientId, NutrientDefinition> = {
     fdcUnit: "MG",
     fdcNumbers: ["302"],
     kind: "target",
-    tiers: micro(
-      2300,
-      dri(
-        [2300, 2300, 2300, 2000, 1800],
-        [2300, 2300, 2300, 2000, 1800],
-        [2300, 2300, 2300],
-        [2300, 2300, 2300],
+    tiers: withAthletic(
+      micro(
+        2300,
+        dri(
+          [2300, 2300, 2300, 2000, 1800],
+          [2300, 2300, 2300, 2000, 1800],
+          [2300, 2300, 2300],
+          [2300, 2300, 2300],
+        ),
+        "AI",
       ),
-      "AI",
+      {
+        type: "computed",
+        rule: "chloride-athletic",
+        basis: "AI plus estimated sweat chloride losses, capped at the UL",
+      },
     ),
     ul: { table: flat(3600), scope: "total" },
-    citation: `${DRI_WATER}; ${FDA_DV}`,
+    citation: `${DRI_WATER}; ${SWEAT}; ${FDA_DV}`,
     note: "Few FDC foods report chloride. Most dietary chloride comes with sodium as salt.",
   },
   selenium: {

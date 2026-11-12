@@ -236,16 +236,107 @@ describe("getDailyTargets", () => {
       expect(t.fat.notes.join(" ")).toMatch(/20% minimum/);
     });
 
-    it("adds sweat losses to water and sodium", () => {
-      const sweaty = getDailyTargets({ ...athlete, sweatLossKg: 1.2 });
-      expect(sweaty.water.value).toBe(3700 + 1800);
-      expect(sweaty.sodium).toMatchObject({ kind: "limit", value: 2300 + 1104 });
-      expect(t.water.value).toBe(3700);
+    describe("sweat losses on training days", () => {
+      const measured = getDailyTargets({
+        ...athlete,
+        trainingToday: [{ minutes: 90, intensity: "high", sweatLossKg: 1.2 }],
+      });
+
+      it("makes no adjustment on rest days", () => {
+        expect(t.water.value).toBe(3700);
+        expect(t.sodium.value).toBe(2300);
+        expect(t.potassium.value).toBe(3400);
+        expect(t.chloride.value).toBe(2300);
+        expect(t.water.notes).toEqual([]);
+      });
+
+      it("adds measured sweat loss to water, sodium and potassium", () => {
+        expect(measured.water.value).toBe(3700 + 1800); // 1.5 L per kg
+        expect(measured.sodium).toMatchObject({ kind: "limit", value: 2300 + 1104 }); // 920 mg/L
+        expect(measured.potassium.value).toBe(3400 + 235); // 196 mg/L
+        expect(measured.water.notes.join(" ")).not.toMatch(/estimated at ~1 L/);
+      });
+
+      it("adds sweat chloride, capped at the 3600 mg UL", () => {
+        expect(measured.chloride.value).toBe(3600); // 2300 + 1489 would exceed the UL
+        expect(measured.chloride.notes.join(" ")).toMatch(/Capped at the 3600 mg upper limit/);
+        const light = getDailyTargets({
+          ...athlete,
+          trainingToday: [{ minutes: 30, intensity: "moderate", sweatLossKg: 0.5 }],
+        });
+        expect(light.chloride.value).toBe(2921); // 2300 + 0.5 × 1241
+      });
+
+      it("estimates ~1 L of sweat per hour when sweat loss was not measured", () => {
+        const estimated = getDailyTargets({
+          ...athlete,
+          trainingToday: [{ minutes: 90, intensity: "high" }],
+        });
+        expect(estimated.water.value).toBe(3700 + 2250);
+        expect(estimated.sodium.value).toBe(2300 + 1380);
+        expect(estimated.sodium.notes.join(" ")).toMatch(/estimated at ~1 L per training hour/);
+      });
+
+      it("does not adjust the Average tier", () => {
+        const avg = getDailyTargets({
+          ...man,
+          trainingToday: [{ minutes: 90, intensity: "high", sweatLossKg: 1.2 }],
+        });
+        expect(avg.water.value).toBe(3700);
+        expect(avg.sodium.value).toBe(2300);
+      });
     });
 
-    it("uses the Average DRI for micronutrients", () => {
-      expect(t.iron.value).toBe(getDailyTargets(man).iron.value);
-      expect(t.iron.notes[0]).toMatch(/Average DRI/);
+    describe("iron", () => {
+      const woman30: TargetInput = {
+        ...athlete,
+        sex: "female",
+        age: 30,
+        weightKg: 60,
+        heightCm: 165,
+      };
+
+      it("adds 30% for men", () => {
+        expect(t.iron).toMatchObject({ value: 10.4, min: 8, max: 10.4 });
+      });
+
+      it("adds 30% for women by default, allowing up to 70%", () => {
+        const w = getDailyTargets({ ...woman30, trainingType: "strength" });
+        expect(w.iron).toMatchObject({ value: 23.4, min: 18, max: 30.6 });
+      });
+
+      it("adds 70% for female endurance athletes", () => {
+        expect(getDailyTargets(woman30).iron).toMatchObject({ value: 30.6, min: 18, max: 30.6 });
+        expect(getDailyTargets({ ...woman30, age: 16 }).iron.value).toBe(25.5); // 15 × 1.7
+      });
+
+      it("stays under the 45 mg UL and suggests a ferritin test", () => {
+        const w = getDailyTargets(woman30);
+        expect(w.iron.value!).toBeLessThanOrEqual(45);
+        expect(w.iron.ul).toBe(45);
+        expect(w.iron.notes.join(" ")).toMatch(/not an official recommendation/);
+        expect(w.iron.notes.join(" ")).toMatch(/ferritin/);
+      });
+
+      it("keeps the DRI in pregnancy and lactation", () => {
+        const p = getDailyTargets({ ...woman30, lifeStage: "pregnant", gestationWeeks: 20 });
+        expect(p.iron.value).toBe(27);
+        expect(p.iron.notes.join(" ")).toMatch(/clinician/);
+        const l = getDailyTargets({ ...woman30, lifeStage: "lactating" });
+        expect(l.iron.value).toBe(9);
+      });
+    });
+
+    it("keeps vitamin D at the RDA with a get-tested note", () => {
+      expect(t.vitamin_d.value).toBe(15);
+      expect(t.vitamin_d.notes.join(" ")).toMatch(/25\(OH\)D of 30 ng\/mL/);
+      expect(t.vitamin_d.notes.join(" ")).toMatch(/getting tested/);
+    });
+
+    it("uses the Average DRI for other micronutrients", () => {
+      expect(t.zinc.value).toBe(getDailyTargets(man).zinc.value);
+      expect(t.calcium.value).toBe(getDailyTargets(man).calcium.value);
+      expect(t.zinc.notes[0]).toMatch(/Average DRI/);
     });
   });
 });
