@@ -77,7 +77,7 @@ The user picks one tier.
 | **Average man / woman**  | National Academies DRIs (RDA/AI) by age and sex; AMDR for macro percentages; 2023 NASEM energy equations.                                                              |
 | **Athletic man / woman** | The Average tier plus peer-reviewed sports-nutrition rules, scaled by body weight and training load.                                                                   |
 
-Average and Athletic limits from the **Dietary Guidelines for Americans 2025–2030**: saturated fat under 10% of calories; added sugars at most **10 g per meal** (summed per meal slot; flag any meal over).
+Average and Athletic limits from the **Dietary Guidelines for Americans 2025–2030**: saturated fat under 10% of calories; added sugars at most **10 g per meal** (summed per meal; flag any meal over). Breakfast, lunch and dinner are one meal each; **each snack is checked on its own** (Phase 2: food logs get a snack number or timestamp so snacks can be told apart, and `lib/nutrients/meal-limits.ts` groups by meal occasion instead of slot).
 
 Values come from the official sources cited in the registry (FDA 21 CFR 101.9, NASEM DRI tables, NASEM 2023 energy equations, DGA 2025–2030). Verify any new value against its source; do not substitute numbers from memory.
 
