@@ -227,19 +227,52 @@ describe("getDailyTargets", () => {
       expect(none.protein.value).toBe(96); // 1.2 g/kg
     });
 
-    it("scales carbs by training hours (g/kg bands)", () => {
-      expect(t.carbohydrate).toMatchObject({ value: 640, min: 480, max: 800 });
+    it("scales carbs by training hours (g/kg bands), trimming them so fat can reach 20%", () => {
+      // High band 6–10 g/kg: the 640 g midpoint leaves only 12% of energy for fat, so carbs drop
+      // to (3496 − 128 × 4 − 20% × 3496) / 4 = 571 g, still inside the band.
+      expect(t.carbohydrate).toMatchObject({ value: 571, min: 480, max: 800 });
+      expect(t.carbohydrate.notes.join(" ")).toMatch(/Lowered from 640 g/);
     });
 
-    it("keeps fat at or above 20% of energy, and at or above the Average tier", () => {
-      // Protein and carbs leave under 20% of energy, so the rule gives 20% of 3495.82 / 9 = 78 g,
-      // which is below Average's AMDR midpoint (27.5% of 2945.77 / 9 = 90 g), so 90 g is used.
-      expect(t.fat.value).toBe(90);
-      expect(t.fat.notes.join(" ")).toMatch(/20% minimum/);
-      expect(t.fat.notes.join(" ")).toMatch(/Raised from 78 to the Average tier's 90 g/);
+    describe("fat = energy left after protein and carbs", () => {
+      const kcal = (x: ReturnType<typeof getDailyTargets>) =>
+        x.protein.value! * 4 + x.carbohydrate.value! * 4 + x.fat.value! * 9;
+
+      it("fills the energy target at 20% of energy or more", () => {
+        expect(t.fat.value).toBe(78); // (3496 − 128 × 4 − 571 × 4) / 9
+        expect(Math.abs(kcal(t) - t.energy.value!)).toBeLessThanOrEqual(5);
+        expect(t.fat.notes.join(" ")).not.toMatch(/run above/);
+      });
+
+      it.each([
+        ["rest day", { trainingHoursPerDay: 0, trainingType: "none" as const }],
+        ["light training", { trainingHoursPerDay: 0.5 }],
+        ["moderate training", { trainingHoursPerDay: 1 }],
+        ["3 h/day", { trainingHoursPerDay: 3 }],
+        ["woman", { sex: "female" as const, weightKg: 60, heightCm: 165 }],
+        ["teen", { age: 16, weightKg: 60, heightCm: 170 }],
+      ])("protein + carbs + fat = energy target: %s", (_, change) => {
+        const x = getDailyTargets({ ...athlete, ...change });
+        expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
+        expect(x.fat.value! * 9).toBeGreaterThanOrEqual(0.2 * x.energy.value! - 5);
+        expect(x.fat.notes.join(" ")).not.toMatch(/run above/);
+      });
+
+      it("is not floored at the Average tier's fat", () => {
+        const average = getDailyTargets({ ...athlete, tier: "average" });
+        expect(t.fat.value!).toBeLessThan(average.fat.value!); // 78 g vs 90 g
+      });
+
+      it("runs over the energy target only when the bottom of the carb band cannot fit", () => {
+        const x = getDailyTargets({ ...athlete, trainingHoursPerDay: 5 });
+        expect(x.carbohydrate.value).toBe(640); // 8 g/kg, the very-high band minimum
+        expect(x.fat.value).toBe(78); // 20% of energy
+        expect(kcal(x)).toBeGreaterThan(x.energy.value!);
+        expect(x.fat.notes.join(" ")).toMatch(/run above the energy target/);
+      });
     });
 
-    describe("never below the Average tier for macro targets", () => {
+    describe("never below the Average tier for macro targets other than fat", () => {
       const profiles: TargetInput[] = [
         athlete,
         { ...athlete, trainingHoursPerDay: 0, trainingType: "none" },
@@ -263,7 +296,7 @@ describe("getDailyTargets", () => {
         for (const id of NUTRIENT_IDS) {
           const a = athletic[id];
           const avg = average[id].value;
-          if (NUTRIENTS[id].category !== "macro" || a.kind !== "target") continue;
+          if (NUTRIENTS[id].category !== "macro" || a.kind !== "target" || id === "fat") continue;
           if (avg === null || a.value === null) continue;
           expect(a.value, id).toBeGreaterThanOrEqual(avg);
           if (a.max !== undefined) expect(a.max, id).toBeGreaterThanOrEqual(a.value!);

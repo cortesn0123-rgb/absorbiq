@@ -150,8 +150,9 @@ describe("targetInput", () => {
     // Strength 1.6 g/kg + 0.2 g/kg for 2 h/day = 1.8 g/kg × 80 kg.
     expect(athletic.protein.value).toBe(144);
     expect(athletic.protein.value!).toBeGreaterThan(average.protein.value!);
-    // 2 h/day is the "high" band, 6–10 g/kg: midpoint 8 g/kg × 80 kg.
-    expect(athletic.carbohydrate.value).toBe(640);
+    // 2 h/day is the "high" band, 6–10 g/kg. The 640 g midpoint would leave fat under 20% of the
+    // 3496 kcal target, so carbs are trimmed to (3496 − 144 × 4 − 20% × 3496) / 4 = 555 g.
+    expect(athletic.carbohydrate.value).toBe(555);
     expect(athletic.carbohydrate.value!).toBeGreaterThan(average.carbohydrate.value!);
   });
 

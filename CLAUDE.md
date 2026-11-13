@@ -88,7 +88,8 @@ Athletic micronutrient rules (everything else = Average):
 - **Iron:** Average RDA +30% (female endurance +70%; women may go up to +70%), never above the 45 mg UL; pregnancy/lactation keep the DRI. Label as not an official recommendation and suggest a ferritin test.
 - **Vitamin D:** intake target stays at the RDA; note that athlete studies treat blood 25(OH)D ≥ 30 ng/mL as adequate and suggest getting tested.
 - **Sodium, chloride, potassium, water:** add estimated sweat losses on training days (measured sweat loss, else ~1 L/h). Chloride is capped at its UL.
-- **Macro floor:** no Athletic macro target is ever below the Average tier's value for the same profile; the higher of the two is used (`floorAtAverage` in `lib/nutrients/targets.ts`). Limits are not floored.
+- **Macro floor:** no Athletic macro target except fat is ever below the Average tier's value for the same profile; the higher of the two is used (`floorAtAverage` in `lib/nutrients/targets.ts`). Limits are not floored.
+- **Fat:** Athletic fat = the energy target minus protein and carbs (4/4/9 kcal/g), so the three add up to the energy target. Fat is never below 20% of energy and has no upper cap. If protein and carbs leave less than 20%, carbs are trimmed, but never below the bottom of their training-load band or the Average tier's carbs; only if that still doesn't fit do calories run over, with a note (`balanceAthleticFat`).
 - **Low energy availability:** flag days under ~30 kcal/kg fat-free mass (`lib/nutrients/energy-availability.ts`), noting the threshold is debated.
 
 Values come from the official sources cited in the registry (FDA 21 CFR 101.9, NASEM DRI tables, NASEM 2023 energy equations, DGA 2025–2030). Verify any new value against its source; do not substitute numbers from memory.
