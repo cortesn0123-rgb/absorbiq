@@ -548,11 +548,11 @@ function floorAtAverage(athletic: DailyTargets, average: DailyTargets): void {
 
 /**
  * Athletic fat: the energy left after protein and carbs, so protein + carbs + fat = the energy
- * target (4/4/9 kcal per g). Fat never goes below the AMDR minimum (25% of energy at 14–18, 20%
- * for adults); when protein and carbs leave less, carbs give way, down to the bottom of their
- * training-load band (and never below the Average tier's carbs). Only if that is not enough do
- * calories run over the energy target. There is no upper cap; a note flags fat above the 35%
- * AMDR maximum (e.g. moderate training with a high energy target).
+ * target (4/4/9 kcal per g), kept within the fat AMDR (25–35% of energy at 14–18, 20–35% for
+ * adults).
+ * - Below the minimum: carbs give way, down to the bottom of their training-load band (and never
+ *   below the Average tier's carbs). Only if that is not enough do calories run over the target.
+ * - Above the 35% maximum: fat is capped and the leftover energy goes to carbs.
  */
 function balanceAthleticFat(
   t: DailyTargets,
@@ -565,42 +565,44 @@ function balanceAthleticFat(
   if (E === null || proteinG === null || carbsG === null) return;
 
   const minFatKcal = amdr.min * E;
+  const maxFatG = Math.floor((amdr.max * E) / 9);
   const minPct = `${Math.round(amdr.min * 100)}%`;
+  const maxPct = `${Math.round(amdr.max * 100)}%`;
+  const remainder = (carbs: number) => E - proteinG * 4 - carbs * 4;
+
   let carbs = carbsG;
-  if (E - proteinG * 4 - carbs * 4 < minFatKcal) {
+  let carbNote: string | null = null;
+  if (remainder(carbs) < minFatKcal) {
     const lowestCarbs = Math.max(t.carbohydrate.min ?? carbs, averageCarbsG ?? 0);
-    carbs = Math.min(carbs, Math.max(lowestCarbs, Math.floor((E - proteinG * 4 - minFatKcal) / 4)));
+    carbs = Math.min(carbs, Math.max(lowestCarbs, Math.floor((remainder(0) - minFatKcal) / 4)));
     if (carbs < carbsG) {
-      t.carbohydrate = {
-        ...t.carbohydrate,
-        value: carbs,
-        notes: [
-          ...t.carbohydrate.notes,
-          `Lowered from ${carbsG} g so fat can stay at ${minPct} of energy within your energy target.`,
-        ],
-      };
+      carbNote = `Lowered from ${carbsG} g so fat can stay at ${minPct} of energy within your energy target.`;
     }
+  } else if (remainder(carbs) > maxFatG * 9) {
+    // Fat is capped at the AMDR maximum; the rest of the energy target goes to carbs.
+    carbs = Math.round((remainder(0) - maxFatG * 9) / 4);
+    carbNote = `Raised from ${carbsG} g with the energy left once fat reaches its ${maxPct} cap.`;
+  }
+  if (carbNote) {
+    t.carbohydrate = {
+      ...t.carbohydrate,
+      value: carbs,
+      max: t.carbohydrate.max === undefined ? undefined : Math.max(t.carbohydrate.max, carbs),
+      notes: [...t.carbohydrate.notes, carbNote],
+    };
   }
 
-  const fatKcal = Math.max(E - proteinG * 4 - carbs * 4, minFatKcal);
+  const fatKcal = Math.min(Math.max(remainder(carbs), minFatKcal), maxFatG * 9);
   const fat = Math.round(fatKcal / 9);
-  const notes = [`Fat is the energy left after protein and carbs (at least ${minPct} of energy).`];
-  if (fatKcal > E - proteinG * 4 - carbs * 4) {
+  const notes = [
+    `Fat is the energy left after protein and carbs, kept between ${minPct} and ${maxPct} of energy.`,
+  ];
+  if (fatKcal > remainder(carbs)) {
     notes.push(
       `Protein and carbs leave less than ${minPct} of energy for fat even at the bottom of the carb band; fat is set to the ${minPct} minimum, so total calories will run above the energy target.`,
     );
   }
-  if (fatKcal > amdr.max * E) {
-    notes.push(
-      "Fat is above 35% of energy, the top of the AMDR, because protein and carb targets leave that much of your energy target.",
-    );
-  }
-  t.fat = {
-    ...t.fat,
-    value: fat,
-    max: Math.max(Math.round((amdr.max * E) / 9), fat),
-    notes,
-  };
+  t.fat = { ...t.fat, value: fat, max: maxFatG, notes };
 }
 
 /** The Average-tier DRI table for a nutrient (used as the base for Athletic rules). */

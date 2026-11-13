@@ -274,13 +274,13 @@ describe("getDailyTargets", () => {
           expect(x.carbohydrate.value).toBe(628);
           expect(x.carbohydrate.notes.join(" ")).toMatch(/fat can stay at 25% of energy/);
           expect(x.fat).toMatchObject({ value: 112, min: 112 });
-          expect(x.fat.notes.join(" ")).toMatch(/at least 25% of energy/);
+          expect(x.fat.notes.join(" ")).toMatch(/between 25% and 35% of energy/);
           expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
         });
 
         it("switches to the adult 20% minimum at 19", () => {
           const adult = getDailyTargets({ ...teen, age: 19 });
-          expect(adult.fat.notes.join(" ")).toMatch(/at least 20% of energy/);
+          expect(adult.fat.notes.join(" ")).toMatch(/between 20% and 35% of energy/);
           expect(adult.fat.value! * 9).toBeLessThan(0.25 * adult.energy.value!);
         });
 
@@ -291,19 +291,50 @@ describe("getDailyTargets", () => {
         });
       });
 
-      it("has no upper cap, but notes fat above 35% of energy", () => {
-        // Moderate training leaves room: Average carbs are only ~45% of the higher energy target.
-        const x = getDailyTargets({
+      describe("capped at 35% of energy (AMDR maximum)", () => {
+        // Moderate training leaves room: Average carbs are only ~45% of the higher energy target,
+        // so the remainder would make fat 39% (134 g). E 3070 kcal, protein 84 g.
+        const input: TargetInput = {
           ...athlete,
           age: 16,
           weightKg: 60,
           heightCm: 170,
           trainingHoursPerDay: 1,
+        };
+        const x = getDailyTargets(input);
+
+        it("caps fat and puts the leftover energy into carbs", () => {
+          expect(x.energy.value).toBe(3070);
+          // floor(35% × 3070 / 9) = 119 g fat; carbs = (3070 − 84 × 4 − 119 × 9) / 4 = 416 g.
+          expect(x.fat).toMatchObject({ value: 119, max: 119 });
+          expect(x.fat.value! * 9).toBeLessThanOrEqual(0.35 * x.energy.value!);
+          expect(x.carbohydrate.value).toBe(416);
+          expect(x.carbohydrate.notes.join(" ")).toMatch(/Raised from 382 g .* 35% cap/);
+          expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
         });
-        expect(x.fat.value! * 9).toBeGreaterThan(0.35 * x.energy.value!);
-        expect(x.fat.max).toBe(x.fat.value);
-        expect(x.fat.notes.join(" ")).toMatch(/above 35% of energy/);
-        expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
+
+        it.each([
+          ["teen, 1 h/day", input],
+          ["adult, 1 h/day", { ...input, age: 25 }],
+          ["adult rest day", { ...athlete, trainingHoursPerDay: 0, trainingType: "none" as const }],
+          [
+            "woman, light training",
+            {
+              ...athlete,
+              sex: "female" as const,
+              weightKg: 55,
+              heightCm: 160,
+              trainingHoursPerDay: 0.5,
+            },
+          ],
+        ])("keeps fat within the AMDR and totals on target: %s", (_, profile) => {
+          const y = getDailyTargets(profile);
+          const { min, max } = fatAmdr(profile.age);
+          expect(y.fat.value! * 9).toBeLessThanOrEqual(max * y.energy.value!);
+          expect(y.fat.value! * 9).toBeGreaterThanOrEqual(min * y.energy.value! - 5);
+          expect(Math.abs(kcal(y) - y.energy.value!)).toBeLessThanOrEqual(5);
+          expect(y.carbohydrate.max!).toBeGreaterThanOrEqual(y.carbohydrate.value!);
+        });
       });
 
       it("is not floored at the Average tier's fat", () => {
