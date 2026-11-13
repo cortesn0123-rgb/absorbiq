@@ -1,11 +1,5 @@
 import "server-only";
-import {
-  DEFAULT_FACTORS,
-  DEFAULT_PROFILE,
-  FactorTable,
-  type EngineProfile,
-  type FactorRow,
-} from "@/lib/bioavailability";
+import { DEFAULT_FACTORS, FactorTable, type FactorRow } from "@/lib/bioavailability";
 import type { createClient } from "@/lib/supabase/server";
 
 /** Loads what the (pure) bioavailability engine needs from the database. */
@@ -48,23 +42,4 @@ export async function loadFactorTable(supabase: Supabase): Promise<FactorTable> 
     source: r.source_citation,
   }));
   return FactorTable.withOverrides(rows);
-}
-
-export async function loadEngineProfile(
-  supabase: Supabase,
-  userId: string,
-): Promise<EngineProfile> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("age, sex, life_stage")
-    .eq("id", userId)
-    .maybeSingle<{
-      age: number | null;
-      sex: "male" | "female" | null;
-      life_stage: string | null;
-    }>();
-  if (error || !data) return DEFAULT_PROFILE;
-  const lifeStage =
-    data.life_stage === "pregnant" || data.life_stage === "lactating" ? data.life_stage : "none";
-  return { age: data.age, sex: data.sex, lifeStage };
 }

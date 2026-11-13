@@ -2,12 +2,18 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
 import { NutrientList, valuesFromEstimates } from "@/components/NutrientList";
-import { requireUser } from "@/lib/auth";
 import { TZ_COOKIE, formatDayLabel, formatLongDate, isIsoDate, todayIn } from "@/lib/dates";
-import { formatAmount, formatNumber } from "@/lib/format";
-import { loadEngineProfile, loadFactorTable } from "@/lib/logs/absorption-data";
+import { formatNumber } from "@/lib/format";
+import { loadFactorTable } from "@/lib/logs/absorption-data";
 import { absorbLogs } from "@/lib/logs/day-absorption";
-import { getDayLogs, getFavoriteFoodIds, getWaterLogs, type LoggedFood } from "@/lib/logs/queries";
+import { buildGoalRows } from "@/lib/logs/day-goals";
+import {
+  getDayLogs,
+  getFavoriteFoodIds,
+  getTrainingSessions,
+  getWaterLogs,
+  type LoggedFood,
+} from "@/lib/logs/queries";
 import {
   compareOccasions,
   occasionKey,
@@ -15,10 +21,23 @@ import {
   snackSummaries,
   type MealOccasion,
 } from "@/lib/meals";
+import { applyCustomGoals } from "@/lib/nutrients/goals";
 import { nutrientsForGrams, sumNutrients } from "@/lib/nutrients/portion";
-import { createClient } from "@/lib/supabase/server";
+import { getDailyTargets } from "@/lib/nutrients/targets";
+import {
+  VIEW_FILTERS,
+  VIEW_FILTER_LABELS,
+  customGoals,
+  isViewFilter,
+  trackedMicros,
+  visibleNutrients,
+  type ViewFilter,
+} from "@/lib/nutrients/tracking";
+import { engineProfile, targetInput } from "@/lib/profile";
+import { loadTracking, requireProfile } from "@/lib/settings";
 import { DayNav } from "./DayNav";
 import { FoodRow } from "./FoodRow";
+import { GoalRow } from "./GoalRow";
 import { WaterCard } from "./WaterCard";
 
 export const metadata = { title: "Day · Micronutrient Tracker" };
@@ -57,32 +76,65 @@ function addHref(date: string, { slot, snackNumber }: MealOccasion): string {
   return `/log?date=${date}&meal=${slot}${snackNumber ? `&snack=${snackNumber}` : ""}`;
 }
 
+/** Day-view chips: narrow the tracked nutrients for the moment (kept in the URL, not saved). */
+function FilterChips({ date, today, filter }: { date: string; today: string; filter: ViewFilter }) {
+  return (
+    <nav aria-label="Show nutrients" className="-mx-4 flex gap-2 overflow-x-auto px-4">
+      {VIEW_FILTERS.map((f) => {
+        const params = [date === today ? "" : `date=${date}`, f === "all" ? "" : `only=${f}`]
+          .filter(Boolean)
+          .join("&");
+        return (
+          <Link
+            key={f}
+            href={params ? `/dashboard?${params}` : "/dashboard"}
+            aria-current={f === filter ? "true" : undefined}
+            className="flex h-9 shrink-0 items-center rounded-full border border-zinc-300 px-4 text-sm font-medium aria-[current]:border-emerald-600 aria-[current]:bg-emerald-600 aria-[current]:text-white dark:border-zinc-700"
+          >
+            {VIEW_FILTER_LABELS[f]}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams">) {
-  const user = await requireUser();
-  const [params, cookieStore, supabase] = await Promise.all([
-    searchParams,
-    cookies(),
-    createClient(),
-  ]);
+  const { profile, supabase } = await requireProfile();
+  const [params, cookieStore] = await Promise.all([searchParams, cookies()]);
   const today = todayIn(cookieStore.get(TZ_COOKIE)?.value);
   const date = isIsoDate(params.date) ? params.date : today;
+  const filter: ViewFilter = isViewFilter(params.only) ? params.only : "all";
 
-  const [logs, water, favoriteIds, profile, factors] = await Promise.all([
+  const [logs, water, favoriteIds, factors, tracking, training] = await Promise.all([
     getDayLogs(supabase, date),
     getWaterLogs(supabase, date),
     getFavoriteFoodIds(supabase),
-    loadEngineProfile(supabase, user.id),
     loadFactorTable(supabase),
+    loadTracking(supabase),
+    getTrainingSessions(supabase, date),
   ]);
   // Recomputed on every view (never stored), so factor changes apply to past days too.
-  const absorption = absorbLogs(logs, profile, factors);
-  const dayIron = absorption.day.totals.iron;
+  const absorption = absorbLogs(logs, engineProfile(profile), factors);
+  const visible = visibleNutrients(trackedMicros(tracking), filter);
+  const goals = applyCustomGoals(
+    getDailyTargets(targetInput(profile, training)),
+    customGoals(tracking),
+  );
   const portions = new Map(
     logs.map((l) => [l.id, nutrientsForGrams(l.food.nutrientsPer100g, l.grams)]),
   );
   const totals = sumNutrients([...portions.values()]);
   const snackNumbers = snackSummaries(logs).map((s) => s.snackNumber);
   const favorites = new Set(favoriteIds);
+  const goalRows = buildGoalRows({
+    visible,
+    goals,
+    foods: logs.map((l) => ({ occasion: l.occasion, amounts: portions.get(l.id)! })),
+    absorption: absorption.day.totals,
+    showScore: profile.goalView === "absorption",
+    factors,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -91,7 +143,10 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
         today={today}
         label={formatDayLabel(date, today)}
         longDate={formatLongDate(date)}
+        query={filter === "all" ? "" : `only=${filter}`}
       />
+
+      <FilterChips date={date} today={today} filter={filter} />
 
       <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Consumed</h2>
@@ -104,22 +159,45 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
           {formatNumber(totals.carbohydrate.amount ?? 0)} g · Fat{" "}
           {formatNumber(totals.fat.amount ?? 0)} g
         </p>
-        {dayIron.consumed !== null && dayIron.absorbed !== null && (
-          <p className="mt-1 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
-            Iron {formatAmount(dayIron.consumed, "mg")} eaten · ~
-            {formatAmount(dayIron.absorbed, "mg")} absorbed
-          </p>
-        )}
         {logs.length > 0 && (
           <details className="mt-3 text-sm">
             <summary className="cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">
-              All nutrients
+              Eaten vs absorbed
             </summary>
             <div className="pt-2">
-              <NutrientList values={valuesFromEstimates(absorption.day.totals)} />
+              <NutrientList values={valuesFromEstimates(absorption.day.totals)} visible={visible} />
             </div>
           </details>
         )}
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Goals</h2>
+          <Link
+            href="/settings/nutrients"
+            className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            Edit
+          </Link>
+        </div>
+        {goalRows.length === 0 ? (
+          <p className="py-2 text-sm text-zinc-500">
+            No tracked nutrients with a goal in this view.
+          </p>
+        ) : (
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+            {goalRows.map((row) => (
+              <GoalRow key={row.id} row={row} />
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 text-xs text-zinc-500">
+          Bars compare what you ate with your goal.
+          {profile.goalView === "absorption" &&
+            " The absorption score (1.0 = typical diet) estimates how well your food pairings are absorbed."}{" "}
+          Tap a goal for its source.
+        </p>
       </section>
 
       <WaterCard
@@ -166,6 +244,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
                     absorption={absorption.byLog.get(log.id)!}
                     isFavorite={favorites.has(log.food.id)}
                     snackNumbers={snackNumbers}
+                    visible={visible}
                   />
                 ))}
               </ul>
@@ -176,7 +255,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
                   {label} nutrients: eaten vs absorbed
                 </summary>
                 <div className="pb-3">
-                  <NutrientList values={valuesFromEstimates(mealTotals)} />
+                  <NutrientList values={valuesFromEstimates(mealTotals)} visible={visible} />
                 </div>
               </details>
             )}

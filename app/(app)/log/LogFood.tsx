@@ -14,6 +14,7 @@ import type { PortionInput } from "@/lib/logs/validate";
 import { occasionLabel, type MealOccasion } from "@/lib/meals";
 import { nutrientsForGrams } from "@/lib/nutrients/portion";
 import { deleteLog, loadFood, logFood, setFavorite } from "../actions";
+import type { NutrientId } from "@/lib/nutrients/registry";
 import { FoodPicker } from "./FoodPicker";
 
 interface SearchState {
@@ -44,6 +45,7 @@ export function LogFood({
   defaultSnack,
   recent,
   favorites,
+  visible,
 }: {
   date: string;
   dayLabel: string;
@@ -52,6 +54,8 @@ export function LogFood({
   defaultSnack: number;
   recent: QuickFood[];
   favorites: QuickFood[];
+  /** Nutrients to show (macros plus tracked micros). */
+  visible: NutrientId[];
 }) {
   const router = useRouter();
   const [occasion, setOccasion] = useState(initialOccasion);
@@ -193,6 +197,7 @@ export function LogFood({
 
       {picked ? (
         <FoodPicker
+          visible={visible}
           key={picked.food.id}
           food={picked.food}
           saved={picked.saved}

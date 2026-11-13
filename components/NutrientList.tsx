@@ -54,10 +54,25 @@ const INDENTED = new Set<NutrientId>([
   "linoleic_acid",
 ]);
 
-/** All registry nutrients, grouped into macros, vitamins and minerals. */
-export function NutrientList({ values }: { values: NutrientValues }) {
-  const showAbsorbed = NUTRIENT_LIST.some((d) => values[d.id].estimate);
-  const anyPartial = NUTRIENT_LIST.some((d) => values[d.id].partial);
+/**
+ * Registry nutrients grouped into macros, vitamins and minerals. `visible` limits the list to
+ * the user's tracked nutrients (see lib/nutrients/tracking.ts); all are shown when omitted.
+ */
+export function NutrientList({
+  values,
+  visible,
+}: {
+  values: NutrientValues;
+  visible?: readonly NutrientId[];
+}) {
+  const shown = visible ? new Set(visible) : null;
+  const defs = shown ? NUTRIENT_LIST.filter((d) => shown.has(d.id)) : NUTRIENT_LIST;
+  const showAbsorbed = defs.some((d) => values[d.id].estimate);
+  const anyPartial = defs.some((d) => values[d.id].partial);
+  const sections = SECTIONS.filter(({ category }) => defs.some((d) => d.category === category));
+  if (sections.length === 0) {
+    return <p className="text-sm text-zinc-500">No tracked nutrients in this view.</p>;
+  }
   return (
     <div className="flex flex-col gap-4 text-sm">
       {showAbsorbed && (
@@ -67,7 +82,7 @@ export function NutrientList({ values }: { values: NutrientValues }) {
         </div>
       )}
       <div className={`grid gap-x-8 gap-y-4 ${showAbsorbed ? "" : "sm:grid-cols-2"}`}>
-        {SECTIONS.map(({ category, title }) => (
+        {sections.map(({ category, title }) => (
           <section
             key={category}
             className={category === "macro" && !showAbsorbed ? "sm:col-span-2" : undefined}
@@ -76,15 +91,17 @@ export function NutrientList({ values }: { values: NutrientValues }) {
               {title}
             </h4>
             <dl className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-              {NUTRIENT_LIST.filter((d) => d.category === category).map((def) => (
-                <NutrientRow
-                  key={def.id}
-                  def={def}
-                  value={values[def.id]}
-                  indented={INDENTED.has(def.id)}
-                  showAbsorbed={showAbsorbed}
-                />
-              ))}
+              {defs
+                .filter((d) => d.category === category)
+                .map((def) => (
+                  <NutrientRow
+                    key={def.id}
+                    def={def}
+                    value={values[def.id]}
+                    indented={INDENTED.has(def.id)}
+                    showAbsorbed={showAbsorbed}
+                  />
+                ))}
             </dl>
           </section>
         ))}

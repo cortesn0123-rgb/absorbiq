@@ -1,0 +1,42 @@
+import Link from "next/link";
+
+export const metadata = { title: "Settings · Micronutrient Tracker" };
+
+const LINKS = [
+  {
+    href: "/settings/nutrients",
+    title: "Nutrients",
+    description: "Choose what to track, your target tier and your goals.",
+  },
+  {
+    href: "/settings/profile",
+    title: "Profile",
+    description: "Age, sex, body size, activity and training.",
+  },
+];
+
+export default function SettingsPage() {
+  return (
+    <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+      <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        {LINKS.map((l) => (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+            >
+              <span className="flex flex-col">
+                <span className="font-medium">{l.title}</span>
+                <span className="text-sm text-zinc-500">{l.description}</span>
+              </span>
+              <span aria-hidden className="text-zinc-400">
+                ›
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

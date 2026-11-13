@@ -10,6 +10,7 @@ import { formatNumber, formatPortion } from "@/lib/format";
 import { initialChoice, resolveChoice } from "@/lib/logs/portion-choice";
 import type { LoggedFood } from "@/lib/logs/queries";
 import { MAX_PORTION_GRAMS, nutrientsForGrams } from "@/lib/nutrients/portion";
+import type { NutrientId } from "@/lib/nutrients/registry";
 import { deleteLog, setFavorite, updateLog } from "../actions";
 
 const actionClass =
@@ -24,11 +25,14 @@ export function FoodRow({
   absorption,
   isFavorite,
   snackNumbers,
+  visible,
 }: {
   log: LoggedFood;
   absorption: NutrientEstimates;
   isFavorite: boolean;
   snackNumbers: number[];
+  /** Nutrients to show (macros plus tracked micros). */
+  visible: NutrientId[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -104,7 +108,7 @@ export function FoodRow({
             />
           ) : (
             <>
-              <NutrientList values={valuesFromEstimates(absorption)} />
+              <NutrientList values={valuesFromEstimates(absorption)} visible={visible} />
               <div className="flex flex-wrap gap-1">
                 <button type="button" onClick={() => setEditing(true)} className={actionClass}>
                   Edit

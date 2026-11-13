@@ -17,6 +17,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           >
             Log food
           </Link>
+          <Link
+            href="/settings"
+            className="flex h-10 items-center rounded-lg px-3 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          >
+            Settings
+          </Link>
           <form action="/auth/signout" method="post">
             <button
               type="submit"

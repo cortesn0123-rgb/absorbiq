@@ -9,6 +9,7 @@ import { formatNumber } from "@/lib/format";
 import { initialChoice, resolveChoice } from "@/lib/logs/portion-choice";
 import type { PortionInput as Portion } from "@/lib/logs/validate";
 import { MAX_PORTION_GRAMS, nutrientsForGrams } from "@/lib/nutrients/portion";
+import type { NutrientId } from "@/lib/nutrients/registry";
 
 /** Choose how much of a food, preview it, and save. */
 export function FoodPicker({
@@ -19,6 +20,7 @@ export function FoodPicker({
   onSave,
   onToggleFavorite,
   onCancel,
+  visible,
 }: {
   food: FoodRecord;
   saved?: Portion;
@@ -27,6 +29,7 @@ export function FoodPicker({
   onSave: (portion: Portion, addAnother: boolean) => void;
   onToggleFavorite: (portion: Portion | null) => void;
   onCancel: () => void;
+  visible: readonly NutrientId[];
 }) {
   const [choice, setChoice] = useState(() => initialChoice(food.portions, saved));
   const resolved = resolveChoice(choice, food.portions);
@@ -70,10 +73,10 @@ export function FoodPicker({
       {amounts && (
         <details className="text-sm">
           <summary className="cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">
-            All nutrients for this portion
+            Nutrients for this portion
           </summary>
           <div className="pt-2">
-            <NutrientList values={valuesFromAmounts(amounts)} />
+            <NutrientList values={valuesFromAmounts(amounts)} visible={visible} />
           </div>
         </details>
       )}

@@ -7,6 +7,10 @@
 export const TRAINING_INTENSITIES = ["low", "moderate", "high", "very_high"] as const;
 export type TrainingIntensity = (typeof TRAINING_INTENSITIES)[number];
 
+export function isTrainingIntensity(value: unknown): value is TrainingIntensity {
+  return (TRAINING_INTENSITIES as readonly unknown[]).includes(value);
+}
+
 /** One logged training session (matches the training_logs table). */
 export interface TrainingSession {
   minutes: number;

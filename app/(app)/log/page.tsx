@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { requireUser } from "@/lib/auth";
 import { TZ_COOKIE, formatDayLabel, hourIn, isIsoDate, todayIn } from "@/lib/dates";
 import { getDayLogs, getFavorites, getRecentFoods } from "@/lib/logs/queries";
 import {
@@ -11,7 +10,8 @@ import {
   snackSummaries,
   type MealOccasion,
 } from "@/lib/meals";
-import { createClient } from "@/lib/supabase/server";
+import { trackedMicros, visibleNutrients } from "@/lib/nutrients/tracking";
+import { loadTracking, requireProfile } from "@/lib/settings";
 import { LogFood } from "./LogFood";
 
 export const metadata = { title: "Log food · Micronutrient Tracker" };
@@ -25,21 +25,18 @@ export default function LogPage({ searchParams }: PageProps<"/log">) {
 }
 
 async function LogScreen({ searchParams }: Pick<PageProps<"/log">, "searchParams">) {
-  await requireUser();
-  const [params, cookieStore, supabase] = await Promise.all([
-    searchParams,
-    cookies(),
-    createClient(),
-  ]);
+  const { supabase } = await requireProfile();
+  const [params, cookieStore] = await Promise.all([searchParams, cookies()]);
   const timeZone = cookieStore.get(TZ_COOKIE)?.value;
   const now = new Date();
   const today = todayIn(timeZone, now);
   const date = isIsoDate(params.date) ? params.date : today;
 
-  const [dayLogs, recent, favorites] = await Promise.all([
+  const [dayLogs, recent, favorites, tracking] = await Promise.all([
     getDayLogs(supabase, date),
     getRecentFoods(supabase),
     getFavorites(supabase),
+    loadTracking(supabase),
   ]);
   const snacks = snackSummaries(dayLogs);
   const defaultSnack = defaultSnackNumber(snacks, now);
@@ -67,6 +64,7 @@ async function LogScreen({ searchParams }: Pick<PageProps<"/log">, "searchParams
       defaultSnack={defaultSnack}
       recent={recent}
       favorites={favorites}
+      visible={visibleNutrients(trackedMicros(tracking))}
     />
   );
 }

@@ -13,14 +13,20 @@ export function DayNav({
   today,
   label,
   longDate,
+  query = "",
 }: {
   date: string;
   today: string;
   label: string;
   longDate: string;
+  /** Extra search params to keep when changing day, e.g. "only=mineral". */
+  query?: string;
 }) {
   const router = useRouter();
-  const href = (d: string) => (d === today ? "/dashboard" : `/dashboard?date=${d}`);
+  const href = (d: string) => {
+    const params = [d === today ? "" : `date=${d}`, query].filter(Boolean).join("&");
+    return params ? `/dashboard?${params}` : "/dashboard";
+  };
 
   return (
     <nav aria-label="Day" className="flex items-center justify-between gap-2">
@@ -42,7 +48,7 @@ export function DayNav({
         </label>
         {date !== today && (
           <Link
-            href="/dashboard"
+            href={href(today)}
             className="mt-1 text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
           >
             Back to today

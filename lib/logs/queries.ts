@@ -1,6 +1,7 @@
 import "server-only";
 import { FOOD_COLUMNS, toFoodRecord, type FoodRecord, type FoodRow } from "@/lib/fdc/record";
 import { isMealSlot, type MealOccasion } from "@/lib/meals";
+import { isTrainingIntensity, type TrainingSession } from "@/lib/nutrients/training";
 import type { createClient } from "@/lib/supabase/server";
 
 /** Reads the signed-in user's logs. Row Level Security limits every query to their own rows. */
@@ -144,4 +145,29 @@ export async function getFavoriteFoodIds(supabase: Supabase): Promise<number[]> 
     "favorites",
   );
   return rows.map((r) => r.food_id);
+}
+
+interface TrainingRow {
+  minutes: number;
+  intensity: string;
+  sweat_loss_kg: number | string | null;
+}
+
+/** Training sessions on a day (the Athletic tier adds sweat losses to some targets). */
+export async function getTrainingSessions(
+  supabase: Supabase,
+  date: string,
+): Promise<TrainingSession[]> {
+  const rows = check<TrainingRow[]>(
+    await supabase
+      .from("training_logs")
+      .select("minutes, intensity, sweat_loss_kg")
+      .eq("log_date", date),
+    "training logs",
+  );
+  return rows.map((r) => ({
+    minutes: r.minutes,
+    intensity: isTrainingIntensity(r.intensity) ? r.intensity : "moderate",
+    sweatLossKg: r.sweat_loss_kg === null ? null : Number(r.sweat_loss_kg),
+  }));
 }
