@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NUTRIENT_IDS, TIERS } from "./registry";
+import { NUTRIENT_IDS, NUTRIENTS, TIERS } from "./registry";
 import {
   activityFromTraining,
   athleticCarbBand,
@@ -231,9 +231,60 @@ describe("getDailyTargets", () => {
       expect(t.carbohydrate).toMatchObject({ value: 640, min: 480, max: 800 });
     });
 
-    it("keeps fat at or above 20% of energy and says when it had to", () => {
-      expect(t.fat.value).toBe(78); // 20% of 3495.82 / 9
+    it("keeps fat at or above 20% of energy, and at or above the Average tier", () => {
+      // Protein and carbs leave under 20% of energy, so the rule gives 20% of 3495.82 / 9 = 78 g,
+      // which is below Average's AMDR midpoint (27.5% of 2945.77 / 9 = 90 g), so 90 g is used.
+      expect(t.fat.value).toBe(90);
       expect(t.fat.notes.join(" ")).toMatch(/20% minimum/);
+      expect(t.fat.notes.join(" ")).toMatch(/Raised from 78 to the Average tier's 90 g/);
+    });
+
+    describe("never below the Average tier for macro targets", () => {
+      const profiles: TargetInput[] = [
+        athlete,
+        { ...athlete, trainingHoursPerDay: 0, trainingType: "none" },
+        { ...athlete, trainingHoursPerDay: 0.5, activityLevel: "very_active" },
+        { ...athlete, trainingHoursPerDay: 1, trainingType: "strength" },
+        { ...woman, tier: "athletic", trainingHoursPerDay: 0.25, trainingType: "mixed" },
+        { ...woman, tier: "athletic", age: 16, weightKg: 45, heightCm: 155 },
+        {
+          ...woman,
+          tier: "athletic",
+          lifeStage: "pregnant",
+          gestationWeeks: 30,
+          trainingHoursPerDay: 0.5,
+        },
+        { ...woman, tier: "athletic", lifeStage: "lactating", trainingHoursPerDay: 1 },
+      ];
+
+      it.each(profiles.map((p, i) => [i, p] as const))("profile %i", (_, profile) => {
+        const athletic = getDailyTargets(profile);
+        const average = getDailyTargets({ ...profile, tier: "average" });
+        for (const id of NUTRIENT_IDS) {
+          const a = athletic[id];
+          const avg = average[id].value;
+          if (NUTRIENTS[id].category !== "macro" || a.kind !== "target") continue;
+          if (avg === null || a.value === null) continue;
+          expect(a.value, id).toBeGreaterThanOrEqual(avg);
+          if (a.max !== undefined) expect(a.max, id).toBeGreaterThanOrEqual(a.value!);
+        }
+      });
+
+      it("uses Average carbs when light training gives fewer (3–5 g/kg band)", () => {
+        const light = { ...athlete, trainingHoursPerDay: 0.5, activityLevel: "active" as const };
+        const average = getDailyTargets({ ...light, tier: "average" });
+        const athletic = getDailyTargets(light);
+        // Band midpoint 4 g/kg × 80 kg = 320 g; Average is 55% of the EER / 4.
+        expect(average.carbohydrate.value!).toBeGreaterThan(320);
+        expect(athletic.carbohydrate.value).toBe(average.carbohydrate.value);
+        expect(athletic.carbohydrate.notes.join(" ")).toMatch(/Raised from 320/);
+      });
+
+      it("leaves limits alone", () => {
+        const light = { ...athlete, trainingHoursPerDay: 0, trainingType: "none" as const };
+        expect(getDailyTargets(light).sodium.value).toBe(2300);
+        expect(getDailyTargets(light).added_sugars.value).toBe(10);
+      });
     });
 
     describe("sweat losses on training days", () => {

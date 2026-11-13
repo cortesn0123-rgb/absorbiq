@@ -522,7 +522,32 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
         break;
     }
   }
+  if (input.tier === "athletic")
+    floorAtAverage(result, getDailyTargets({ ...input, tier: "average" }));
   return result;
+}
+
+/**
+ * Athletic macro targets never go below the Average tier's value for the same profile (e.g.
+ * the 3–5 g/kg light-training carb band can fall under the AMDR midpoint). Limits are left
+ * alone: raising a limit would loosen it.
+ */
+function floorAtAverage(athletic: DailyTargets, average: DailyTargets): void {
+  for (const id of NUTRIENT_IDS) {
+    const a = athletic[id];
+    const avg = average[id].value;
+    if (NUTRIENTS[id].category !== "macro" || a.kind !== "target") continue;
+    if (a.value === null || avg === null || a.value >= avg) continue;
+    athletic[id] = {
+      ...a,
+      value: avg,
+      max: a.max === undefined ? undefined : Math.max(a.max, avg),
+      notes: [
+        ...a.notes,
+        `Raised from ${a.value} to the Average tier's ${avg} ${a.unit}: Athletic targets never go below Average.`,
+      ],
+    };
+  }
 }
 
 /** The Average-tier DRI table for a nutrient (used as the base for Athletic rules). */
