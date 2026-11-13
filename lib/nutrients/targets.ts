@@ -243,9 +243,13 @@ export const ATHLETIC_CARB_BANDS = [
   { label: "very high", maxHoursExclusive: Infinity, min: 8, max: 12 },
 ] as const;
 
-/** Athletic fat: at least 20% of energy (the adult AMDR minimum); 35% is the AMDR maximum. */
-export const ATHLETIC_FAT_MIN_SHARE = 0.2;
-const ATHLETIC_FAT_AMDR_MAX_SHARE = 0.35;
+/**
+ * Fat AMDR as shares of energy: 25–35% for ages 14–18, 20–35% for adults (NASEM macronutrient
+ * DRIs, 2002/2005). The lower bound is also the Athletic tier's fat minimum.
+ */
+export function fatAmdr(age: number): { min: number; max: number } {
+  return age < 19 ? { min: 0.25, max: 0.35 } : { min: 0.2, max: 0.35 };
+}
 
 /** ACSM 2007: drink about 1.5 L per kg of body mass lost to sweat. */
 export const SWEAT_REPLACEMENT_ML_PER_KG = 1500;
@@ -386,7 +390,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
       }
 
       case "fat-amdr": {
-        const [lo, hi] = isTeen ? [0.25, 0.35] : [0.2, 0.35];
+        const { min: lo, max: hi } = fatAmdr(input.age);
         return {
           value: round((((lo + hi) / 2) * E) / 9),
           min: round((lo * E) / 9),
@@ -396,7 +400,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
       }
       case "fat-athletic":
         // Set by balanceAthleticFat once protein and carbs are final (after the Average floor).
-        return { value: null, min: round((ATHLETIC_FAT_MIN_SHARE * E) / 9), notes: [] };
+        return { value: null, min: round((fatAmdr(input.age).min * E) / 9), notes: [] };
 
       case "sat-fat-10pct":
         return { value: round((0.1 * E) / 9), notes: [] };
@@ -514,7 +518,7 @@ export function getDailyTargets(input: TargetInput): DailyTargets {
   if (input.tier === "athletic") {
     const average = getDailyTargets({ ...input, tier: "average" });
     floorAtAverage(result, average);
-    balanceAthleticFat(result, average.carbohydrate.value);
+    balanceAthleticFat(result, average.carbohydrate.value, fatAmdr(input.age));
   }
   return result;
 }
@@ -544,18 +548,24 @@ function floorAtAverage(athletic: DailyTargets, average: DailyTargets): void {
 
 /**
  * Athletic fat: the energy left after protein and carbs, so protein + carbs + fat = the energy
- * target (4/4/9 kcal per g). Fat never goes below 20% of energy; when protein and carbs leave
- * less, carbs give way, down to the bottom of their training-load band (and never below the
- * Average tier's carbs). Only if that is not enough do calories run over the energy target.
- * There is no upper cap (in practice the Average carb floor keeps fat at or under 35%).
+ * target (4/4/9 kcal per g). Fat never goes below the AMDR minimum (25% of energy at 14–18, 20%
+ * for adults); when protein and carbs leave less, carbs give way, down to the bottom of their
+ * training-load band (and never below the Average tier's carbs). Only if that is not enough do
+ * calories run over the energy target. There is no upper cap; a note flags fat above the 35%
+ * AMDR maximum (e.g. moderate training with a high energy target).
  */
-function balanceAthleticFat(t: DailyTargets, averageCarbsG: number | null): void {
+function balanceAthleticFat(
+  t: DailyTargets,
+  averageCarbsG: number | null,
+  amdr: { min: number; max: number },
+): void {
   const E = t.energy.value;
   const proteinG = t.protein.value;
   const carbsG = t.carbohydrate.value;
   if (E === null || proteinG === null || carbsG === null) return;
 
-  const minFatKcal = ATHLETIC_FAT_MIN_SHARE * E;
+  const minFatKcal = amdr.min * E;
+  const minPct = `${Math.round(amdr.min * 100)}%`;
   let carbs = carbsG;
   if (E - proteinG * 4 - carbs * 4 < minFatKcal) {
     const lowestCarbs = Math.max(t.carbohydrate.min ?? carbs, averageCarbsG ?? 0);
@@ -566,7 +576,7 @@ function balanceAthleticFat(t: DailyTargets, averageCarbsG: number | null): void
         value: carbs,
         notes: [
           ...t.carbohydrate.notes,
-          `Lowered from ${carbsG} g so fat can stay at 20% of energy within your energy target.`,
+          `Lowered from ${carbsG} g so fat can stay at ${minPct} of energy within your energy target.`,
         ],
       };
     }
@@ -574,16 +584,21 @@ function balanceAthleticFat(t: DailyTargets, averageCarbsG: number | null): void
 
   const fatKcal = Math.max(E - proteinG * 4 - carbs * 4, minFatKcal);
   const fat = Math.round(fatKcal / 9);
-  const notes = ["Fat is the energy left after protein and carbs (at least 20% of energy)."];
+  const notes = [`Fat is the energy left after protein and carbs (at least ${minPct} of energy).`];
   if (fatKcal > E - proteinG * 4 - carbs * 4) {
     notes.push(
-      "Protein and carbs leave less than 20% of energy for fat even at the bottom of the carb band; fat is set to the 20% minimum, so total calories will run above the energy target.",
+      `Protein and carbs leave less than ${minPct} of energy for fat even at the bottom of the carb band; fat is set to the ${minPct} minimum, so total calories will run above the energy target.`,
+    );
+  }
+  if (fatKcal > amdr.max * E) {
+    notes.push(
+      "Fat is above 35% of energy, the top of the AMDR, because protein and carb targets leave that much of your energy target.",
     );
   }
   t.fat = {
     ...t.fat,
     value: fat,
-    max: Math.max(Math.round((ATHLETIC_FAT_AMDR_MAX_SHARE * E) / 9), fat),
+    max: Math.max(Math.round((amdr.max * E) / 9), fat),
     notes,
   };
 }

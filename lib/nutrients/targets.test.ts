@@ -4,6 +4,7 @@ import {
   activityFromTraining,
   athleticCarbBand,
   estimatedEnergyRequirement,
+  fatAmdr,
   getDailyTargets,
   type TargetInput,
 } from "./targets";
@@ -252,10 +253,57 @@ describe("getDailyTargets", () => {
         ["woman", { sex: "female" as const, weightKg: 60, heightCm: 165 }],
         ["teen", { age: 16, weightKg: 60, heightCm: 170 }],
       ])("protein + carbs + fat = energy target: %s", (_, change) => {
-        const x = getDailyTargets({ ...athlete, ...change });
+        const input: TargetInput = { ...athlete, ...change };
+        const x = getDailyTargets(input);
         expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
-        expect(x.fat.value! * 9).toBeGreaterThanOrEqual(0.2 * x.energy.value! - 5);
+        // 4.5 kcal of slack for rounding fat to whole grams.
+        expect(x.fat.value! * 9).toBeGreaterThanOrEqual(
+          fatAmdr(input.age).min * x.energy.value! - 5,
+        );
         expect(x.fat.notes.join(" ")).not.toMatch(/run above/);
+      });
+
+      describe("ages 14–18: at least 25% of energy (DRI AMDR)", () => {
+        const teen: TargetInput = { ...athlete, age: 16 };
+        const x = getDailyTargets(teen);
+
+        it("trims carbs further than the adult 20% rule would", () => {
+          // E 4036 kcal, protein 128 g. 25% fat = 1009 kcal, so carbs = (4036 − 512 − 1009) / 4
+          // = 628 g (the adult 20% minimum would allow 679 g) and fat = 112 g.
+          expect(x.energy.value).toBe(4036);
+          expect(x.carbohydrate.value).toBe(628);
+          expect(x.carbohydrate.notes.join(" ")).toMatch(/fat can stay at 25% of energy/);
+          expect(x.fat).toMatchObject({ value: 112, min: 112 });
+          expect(x.fat.notes.join(" ")).toMatch(/at least 25% of energy/);
+          expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
+        });
+
+        it("switches to the adult 20% minimum at 19", () => {
+          const adult = getDailyTargets({ ...teen, age: 19 });
+          expect(adult.fat.notes.join(" ")).toMatch(/at least 20% of energy/);
+          expect(adult.fat.value! * 9).toBeLessThan(0.25 * adult.energy.value!);
+        });
+
+        it("sets the fat minimum at 25% for teens and 20% for adults", () => {
+          expect(fatAmdr(14)).toEqual({ min: 0.25, max: 0.35 });
+          expect(fatAmdr(18)).toEqual({ min: 0.25, max: 0.35 });
+          expect(fatAmdr(19)).toEqual({ min: 0.2, max: 0.35 });
+        });
+      });
+
+      it("has no upper cap, but notes fat above 35% of energy", () => {
+        // Moderate training leaves room: Average carbs are only ~45% of the higher energy target.
+        const x = getDailyTargets({
+          ...athlete,
+          age: 16,
+          weightKg: 60,
+          heightCm: 170,
+          trainingHoursPerDay: 1,
+        });
+        expect(x.fat.value! * 9).toBeGreaterThan(0.35 * x.energy.value!);
+        expect(x.fat.max).toBe(x.fat.value);
+        expect(x.fat.notes.join(" ")).toMatch(/above 35% of energy/);
+        expect(Math.abs(kcal(x) - x.energy.value!)).toBeLessThanOrEqual(5);
       });
 
       it("is not floored at the Average tier's fat", () => {
