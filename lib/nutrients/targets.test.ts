@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NUTRIENT_IDS, NUTRIENTS, TIERS } from "./registry";
 import {
+  ACTIVITY_LEVELS,
   activityFromTraining,
   athleticCarbBand,
   estimatedEnergyRequirement,
@@ -522,5 +523,35 @@ describe("athletic helpers", () => {
     [5, "very high"],
   ] as const)("%s h/day -> %s carb band", (h, band) => {
     expect(athleticCarbBand(h).label).toBe(band);
+  });
+});
+
+describe("vitamin D", () => {
+  it("is the published RDA (15 mcg, 20 mcg from 71) or the FDA DV (20 mcg) for every profile", () => {
+    for (const tier of TIERS) {
+      for (const sex of ["male", "female"] as const) {
+        for (const age of [15, 25, 45, 65, 75]) {
+          for (const activityLevel of ACTIVITY_LEVELS) {
+            for (const trainingHoursPerDay of [0, 1, 3]) {
+              const t = getDailyTargets({
+                tier,
+                sex,
+                age,
+                weightKg: 70,
+                heightCm: 175,
+                activityLevel,
+                trainingHoursPerDay,
+                trainingType: "endurance",
+                trainingToday: trainingHoursPerDay
+                  ? [{ minutes: 120, intensity: "high", sweatLossKg: null }]
+                  : [],
+              });
+              const expected = tier === "fda" ? 20 : age >= 71 ? 20 : 15;
+              expect(t.vitamin_d.value).toBe(expected);
+            }
+          }
+        }
+      }
+    }
   });
 });

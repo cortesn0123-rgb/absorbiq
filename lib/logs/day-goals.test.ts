@@ -73,7 +73,9 @@ describe("buildGoalRows", () => {
     expect(iron.consumed).toBeCloseTo(meal.totals.iron.consumed!);
     expect(iron.ratio).toBeCloseTo(meal.totals.iron.consumed! / 18);
     expect(iron.score).not.toBeNull();
-    expect(iron.score!.value).toBeGreaterThan(0);
+    expect(iron.score!.value).toBeCloseTo(
+      meal.totals.iron.absorbed! / (meal.totals.iron.consumed! * 0.16),
+    );
 
     const [withoutScore] = buildGoalRows({
       visible: ["iron"],
@@ -84,6 +86,17 @@ describe("buildGoalRows", () => {
     });
     expect(withoutScore.score).toBeNull();
     expect(withoutScore.ratio).toBe(iron.ratio);
+  });
+
+  it("shows no score value (—) for a scored nutrient when nothing was eaten", () => {
+    const [iron] = buildGoalRows({
+      visible: ["iron"],
+      goals,
+      foods: [],
+      absorption: noAbsorption,
+      showScore: true,
+    });
+    expect(iron.score).toMatchObject({ value: null });
   });
 
   it("checks added sugars per meal, each snack on its own", () => {

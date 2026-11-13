@@ -195,7 +195,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
         <p className="mt-2 text-xs text-zinc-500">
           Bars compare what you ate with your goal.
           {profile.goalView === "absorption" &&
-            " The absorption score (1.0 = typical diet) estimates how well your food pairings are absorbed."}{" "}
+            " The absorption score (1.0 = typical absorption for what you ate) shows whether your food pairings help or hold back absorption."}{" "}
           Tap a goal for its source.
         </p>
       </section>

@@ -117,8 +117,8 @@ export function NutrientSettings({
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Progress bars always compare what you ate with your goal, because goals (RDAs) already
           assume typical absorption from a mixed diet; the absorption score next to each bar (1.0 =
-          a typical diet) shows where your food pairings help or hurt absorption, so use it to spot
-          relative weak spots rather than as an exact target.
+          typical absorption for what you ate, however much) shows where your food pairings help or
+          hurt absorption, so use it to spot relative weak spots rather than as an exact target.
         </p>
       </section>
 

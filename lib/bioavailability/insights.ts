@@ -207,7 +207,7 @@ export function dayInsights(
   return meals.flatMap((m) => mealInsights(m, profile, table, dayCopperMg));
 }
 
-/** Insights that cost less than this share of a goal's expected absorbed amount are not shown. */
+/** Insights that cost less than this share of goal × typical absorption are not shown. */
 export const MIN_INSIGHT_SHARE = 0.02;
 
 /**

@@ -1,14 +1,14 @@
 /**
- * Absorption score: how much was absorbed compared with what a typical mixed diet would absorb
- * from the goal amount.
+ * Absorption score: how well what you ate was absorbed, compared with a typical mixed diet
+ * absorbing the same amount.
  *
- *   expected absorbed = goal x typical absorption factor
- *   absorption score  = absorbed / expected absorbed
+ *   typical absorbed = consumed x the nutrient's typical absorption factor
+ *   absorption score = absorbed / typical absorbed
  *
- * Goals stay as published (intake amounts). Progress toward a goal always uses CONSUMED intake;
- * the score is a separate signal that shows whether food pairings beat or fall short of a
- * typical diet. `pairing` (= score / progress) isolates the pairing effect: above 1 means this
- * food combination is absorbed better than a typical diet, below 1 worse.
+ * 1.0 = typical absorption for what was actually eaten, however much that was; above 1, the
+ * food pairings helped absorption; below 1, they held it back. With nothing eaten there is no
+ * score (shown as "—"). Goals stay as published intake amounts: progress toward a goal always
+ * uses CONSUMED intake, and the score is never compared with a goal.
  */
 
 import { NUTRIENTS, type NutrientId } from "@/lib/nutrients/registry";
@@ -62,21 +62,22 @@ export interface TypicalAbsorption {
 
 /**
  * Fraction absorbed from a typical mixed diet, or null when the nutrient is not scored.
- * Copper's absorption depends on daily intake, so it is read off its curve at the goal amount.
+ * Copper's absorption depends on daily intake, so it is read off its curve at `dailyAmount`
+ * (the amount eaten, for the score).
  */
 export function typicalAbsorption(
   id: NutrientId,
-  goal: number,
+  dailyAmount: number,
   table: FactorTable = DEFAULT_FACTORS,
 ): TypicalAbsorption | null {
   if (id === "copper") {
     const at = (s: "low" | "value" | "high") =>
-      curveAt(table, "copper", "daily_mg", goal, s, "log");
+      curveAt(table, "copper", "daily_mg", dailyAmount, s, "log");
     return {
       value: at("value"),
       low: at("low"),
       high: at("high"),
-      description: "Copper absorbed at the goal intake (absorption depends on daily intake).",
+      description: "Copper absorbed at this daily intake (absorption depends on daily intake).",
     };
   }
   const ref = TYPICAL_ROWS[id];
@@ -86,18 +87,18 @@ export function typicalAbsorption(
 }
 
 export interface AbsorptionScore {
-  /** goal x typical absorption. */
-  expectedAbsorbed: number;
-  /** absorbed / expected absorbed (1 = what a typical diet meeting the goal absorbs). */
-  score: number;
-  scoreLow: number;
-  scoreHigh: number;
-  /** consumed / goal, the progress-bar value. */
-  progress: number;
-  /** absorbed / (consumed x typical absorption); null when nothing was eaten. */
-  pairing: number | null;
+  /** consumed x typical absorption: what a typical diet absorbs from the same intake. */
+  typicalAbsorbed: number;
+  /** absorbed / typical absorbed (1 = typical); null when nothing was eaten. */
+  score: number | null;
+  scoreLow: number | null;
+  scoreHigh: number | null;
 }
 
+/**
+ * The absorption score, or null when the nutrient is not scored: limits, nutrients counted as
+ * eaten, carbohydrate, nutrients with no goal (the user is not aiming for them) and no data.
+ */
 export function absorptionScore(
   id: NutrientId,
   estimate: Pick<NutrientEstimate, "consumed" | "absorbed" | "low" | "high">,
@@ -107,16 +108,17 @@ export function absorptionScore(
   if (NUTRIENTS[id].kind === "limit" || goal === null || goal <= 0) return null;
   const { consumed, absorbed, low, high } = estimate;
   if (consumed === null || absorbed === null || low === null || high === null) return null;
-  const typical = typicalAbsorption(id, goal, table);
+  const typical = typicalAbsorption(id, consumed, table);
   if (!typical || typical.value <= 0) return null;
 
-  const expectedAbsorbed = goal * typical.value;
+  const typicalAbsorbed = consumed * typical.value;
+  if (typicalAbsorbed <= 0) {
+    return { typicalAbsorbed: 0, score: null, scoreLow: null, scoreHigh: null };
+  }
   return {
-    expectedAbsorbed,
-    score: absorbed / expectedAbsorbed,
-    scoreLow: low / expectedAbsorbed,
-    scoreHigh: high / expectedAbsorbed,
-    progress: consumed / goal,
-    pairing: consumed > 0 ? absorbed / (consumed * typical.value) : null,
+    typicalAbsorbed,
+    score: absorbed / typicalAbsorbed,
+    scoreLow: low / typicalAbsorbed,
+    scoreHigh: high / typicalAbsorbed,
   };
 }

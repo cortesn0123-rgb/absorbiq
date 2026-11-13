@@ -122,7 +122,7 @@ One registry file defines every nutrient. Every other part of the app reads from
 
 - **Goals stay as published** (FDA DVs, DRIs, DGA limits). They are intake amounts and already assume typical absorption, so never convert a goal into an absorbed amount.
 - **Progress bars compare CONSUMED intake to the goal.** Never compare absorbed amounts to a goal.
-- **Absorption score** = absorbed ÷ expected absorbed, where expected absorbed = goal × the nutrient's typical absorption factor (`typicalAbsorption` in `lib/bioavailability/score.ts`, from the factor table). It shows whether the user's food pairings beat (above 1) or fall short of (below 1) a typical diet. `pairing` (= score ÷ progress) isolates the pairing effect.
+- **Absorption score** = absorbed ÷ (consumed × the nutrient's typical absorption factor) (`absorptionScore` / `typicalAbsorption` in `lib/bioavailability/score.ts`, factors from the factor table). 1.0 = typical absorption for what was actually eaten, regardless of how much; above 1 the user's food pairings beat a typical diet, below 1 they fall short. The goal plays no part in the score. Nothing consumed = no score, shown as "—". Copper's typical factor is read off its intake curve at the amount eaten.
 - Not scored: limits, nutrients counted as eaten (calories, fiber, water), carbohydrate (its goal includes fiber, which is not absorbed) and nutrients with no goal.
 - The **AI helper** closes consumed-vs-goal gaps, and among foods that do, favours pairings that raise the absorption score (e.g. vitamin C with plant iron, fat with carotenoids, tea away from iron-rich meals).
 
@@ -166,6 +166,6 @@ One registry file defines every nutrient. Every other part of the app reads from
 - Nutrient selection: `lib/nutrients/tracking.ts` (presets, `trackedMicros`, `visibleNutrients`; no row in `tracked_nutrients` = tracked). Macros are always shown. Every nutrient list takes a `visible` list from there, and so must the AI helper.
 - Goals: `lib/nutrients/goals.ts` applies custom overrides to `getDailyTargets` output; `lib/logs/day-goals.ts` builds the Day view's consumed-vs-goal rows. `profiles.goal_view` only toggles the absorption score next to each bar; bars always use consumed intake.
 - Checks: `npm run check` (typecheck + lint + tests). Format with `npm run format`.
-- Dashboard: `/home` (landing page after sign-in); the Day view stays at `/dashboard`. Data in `lib/logs/dashboard.ts` (bands, gaps, macro card, 7/30-day history) is built from `buildGoalRows`, so numbers match the Day view. The bar marker is the absorption score, never absorbed vs goal.
-- Absorption insights: `lib/bioavailability/insights.ts` (engine what-ifs via `absorbMeal`'s `adjustContext`/`only` options; ranked by loss ÷ goal's expected absorbed). Not AI.
+- Dashboard: `/home` (landing page after sign-in); the Day view stays at `/dashboard`. Data in `lib/logs/dashboard.ts` (bands, gaps, macro card, 7/30-day history) is built from `buildGoalRows`, so numbers match the Day view. The bar marker sits at consumed × absorption score (the bar nudged by pairing quality), never absorbed vs goal.
+- Absorption insights: `lib/bioavailability/insights.ts` (engine what-ifs via `absorbMeal`'s `adjustContext`/`only` options; ranked by loss ÷ (goal × typical absorption), a weighting only, not the score). Not AI.
 - `/helper?nutrient=<id>` is a placeholder until the AI helper phase.

@@ -305,13 +305,13 @@ directly: about 1–2 mg of absorbed iron is normal on a diet that meets an 18 m
 
 To show whether your food pairings help, the app computes an **absorption score**:
 
-- expected absorbed = goal × the nutrient's typical absorption from a mixed diet
-- absorption score = absorbed ÷ expected absorbed
+- typical absorbed = eaten × the nutrient's typical absorption from a mixed diet
+- absorption score = absorbed ÷ typical absorbed
 
-A score of 1 means you absorbed what a typical diet meeting the goal would. **Pairing**
-(= score ÷ progress, or absorbed ÷ (eaten × typical absorption)) isolates the effect of what you
-ate together: above 1, your combinations were absorbed better than a typical diet; below 1,
-worse.
+A score of 1 means typical absorption for what you actually ate, however much that was; the goal
+plays no part. It isolates the effect of what you ate together: above 1, your combinations were
+absorbed better than a typical diet; below 1, worse. With nothing eaten there is no score (shown
+as "—").
 
 Typical absorption comes from the factor table. It is each nutrient's baseline (for example
 zinc 30%, the moderate WHO band; calcium 25%; protein 92%; vitamin A and folate 1.0), plus two
@@ -320,7 +320,8 @@ rows of its own:
 - **Iron 16%** (14–18%), NIH ODS for mixed diets with meat, seafood and vitamin C.
 - **B12 50%**, NIH ODS for normal food doses.
 
-Copper's typical absorption is read off its intake curve at the goal amount.
+Copper's typical absorption is read off its intake curve at the amount eaten that day (its
+absorption depends on daily intake, not on pairings, so its score is about 1).
 
 Limits, nutrients counted as eaten (calories, fiber, water) and carbohydrate (whose goal
 includes fiber, which is not absorbed) have no score. The AI helper closes eaten-versus-goal
@@ -342,6 +343,7 @@ calcium from another food held back non-heme iron, no vitamin C or meat with pla
 under the adequate-fat threshold with fat-soluble vitamins, calcium bound by oxalate, and zinc in
 the WHO "low" phytate:zinc band. Each is sized by rerunning the meal without the inhibitor (what
 if: no tea, no calcium, enough fat) or, when there is nothing to remove, against the typical
-absorption used by the absorption score. Tips are ranked by the loss as a share of the goal's
-expected absorbed amount (goal × typical absorption), only for tracked nutrients with a goal; each
+absorption used by the absorption score. Tips are ranked by the loss as a share of what a typical
+diet absorbs from the goal amount (goal × typical absorption), so losses in different units can be
+compared; only tracked nutrients with a goal count, and each
 kind of tip is shown once, for the meal where it costs the most.

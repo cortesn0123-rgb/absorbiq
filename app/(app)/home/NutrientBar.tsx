@@ -1,14 +1,16 @@
-import { formatAmount, formatNumber } from "@/lib/format";
+import { ScoreValue } from "@/components/AbsorptionScore";
+import { formatAmount } from "@/lib/format";
 import { BAND_LABELS, bandOf } from "@/lib/logs/dashboard";
 import type { GoalRowData } from "@/lib/logs/day-goals";
 import { BAND_FILL, BAND_TEXT, OVER_BANDS } from "./bands";
 
 export const MARKER_NOTE =
-  "The bar is what you ate compared with your goal. The thin marker is your absorption score: estimated absorbed ÷ what a typical diet absorbs from your goal amount. The marker at the end of the bar means you absorbed about as much as a typical diet that meets the goal. Absorbed amounts are estimates that depend on what you ate together.";
+  "The bar is what you ate compared with your goal. The thin marker is that intake scaled by your absorption score (absorbed ÷ what a typical diet absorbs from the same amount): ahead of the bar when your food pairings helped absorption, behind it when they held it back, on it when absorption was typical. Absorbed amounts are estimates that depend on what you ate together.";
 
 /**
- * Consumed vs goal, coloured and labelled by band, with an optional faint marker at the
- * absorption score (never absorbed vs goal; see CLAUDE.md).
+ * Consumed vs goal, coloured and labelled by band, with an optional faint marker at consumed x
+ * absorption score: the bar's position nudged by how well this intake was absorbed compared with
+ * a typical diet. Absorbed amounts are never compared with the goal (see CLAUDE.md).
  */
 export function NutrientBar({
   row,
@@ -17,7 +19,7 @@ export function NutrientBar({
   compact = false,
 }: {
   row: GoalRowData;
-  /** Faint marker at the absorption score, with "~X absorbed" (scored nutrients only). */
+  /** Faint marker at consumed x score, with "~X absorbed" (scored nutrients only). */
   showMarker: boolean;
   /** Also print the score's value (the profile's goal view setting). */
   showScore: boolean;
@@ -26,7 +28,8 @@ export function NutrientBar({
   const band = bandOf(row);
   const pct = row.ratio === null ? 0 : Math.min(row.ratio, 1) * 100;
   const score = showMarker ? row.score : null;
-  const markerPct = score ? Math.min(score.value, 1) * 100 : null;
+  const markerPct =
+    score?.value != null && row.ratio !== null ? Math.min(row.ratio * score.value, 1) * 100 : null;
 
   return (
     <div className={compact ? "py-1.5" : "py-2"}>
@@ -79,7 +82,12 @@ export function NutrientBar({
         {score && row.absorbed && (
           <span title={MARKER_NOTE} className="tabular-nums">
             ~{formatAmount(row.absorbed.value, row.unit)} absorbed
-            {showScore && ` · score ~${formatNumber(score.value)}`}
+            {showScore && (
+              <>
+                {" "}
+                · score <ScoreValue score={score} range={false} />
+              </>
+            )}
           </span>
         )}
       </div>

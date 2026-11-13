@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { formatAmount, formatNumber } from "@/lib/format";
+import { SCORE_NOTE, ScoreValue } from "@/components/AbsorptionScore";
+import { formatAmount } from "@/lib/format";
 import type { GoalRowData } from "@/lib/logs/day-goals";
 import type { GoalStatus } from "@/lib/nutrients/goals";
 
@@ -12,9 +13,6 @@ const BAR_COLORS: Record<GoalStatus, string> = {
   "under-limit": "bg-sky-500",
   "over-limit": "bg-red-500",
 };
-
-const SCORE_NOTE =
-  "Absorption score = estimated absorbed ÷ what a typical diet absorbs from your goal amount. 1.0 means typical; above 1, your pairings help absorption; below 1, they hold it back or you ate less. It is an estimate for spotting relative weak spots, not a target.";
 
 /** One goal on the Day view: consumed vs goal bar, and optionally the absorption score. */
 export function GoalRow({ row }: { row: GoalRowData }) {
@@ -67,11 +65,7 @@ export function GoalRow({ row }: { row: GoalRowData }) {
           </span>
           {row.score && (
             <span title={SCORE_NOTE}>
-              Absorption score ~{formatNumber(row.score.value)}
-              <span className="text-zinc-400">
-                {" "}
-                ({formatNumber(row.score.low)}–{formatNumber(row.score.high)})
-              </span>
+              Absorption score <ScoreValue score={row.score} />
             </span>
           )}
         </span>
@@ -90,8 +84,9 @@ export function GoalRow({ row }: { row: GoalRowData }) {
           <p className="mt-1">{row.source}</p>
           {row.score && (
             <p className="mt-2">
-              {SCORE_NOTE} A typical diet meeting your goal absorbs ~
-              {formatAmount(row.score.expected, row.unit)}.
+              {SCORE_NOTE}
+              {row.score.value !== null &&
+                ` A typical diet absorbs ~${formatAmount(row.score.typicalAbsorbed, row.unit)} from what you ate.`}
             </p>
           )}
         </div>

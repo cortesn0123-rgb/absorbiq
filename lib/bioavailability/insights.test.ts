@@ -77,7 +77,7 @@ describe("absorption insights", () => {
     expect(insight.text).toContain("The spinach in your dinner is high in oxalate");
   });
 
-  it("ranks by loss as a share of the goal's expected absorbed amount, only for goals given", () => {
+  it("ranks by loss as a share of goal × typical absorption, only for goals given", () => {
     const all = dayInsights([meal("Lunch", [lentils(), blackTea()]), meal("Snack 1", [carrots()])]);
     expect(rankInsights(all, {}).length).toBe(0);
     const ironOnly = rankInsights(all, { iron: 18 });

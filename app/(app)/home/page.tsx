@@ -159,8 +159,9 @@ async function Dashboard() {
           </ul>
         )}
         <p className="mt-2 text-xs text-zinc-500" title={MARKER_NOTE}>
-          Bars show what you ate vs your goal. The thin marker is the absorption score (estimate):
-          at the end of the bar, you absorbed about what a typical diet meeting the goal absorbs.
+          Bars show what you ate vs your goal. The thin marker shifts that by the absorption score
+          (estimate): ahead of the bar when your food pairings helped absorption, behind when they
+          held it back.
         </p>
       </section>
 

@@ -11,41 +11,45 @@ const est = (consumed: number, absorbed: number) => ({
 });
 
 describe("absorption score", () => {
-  it("is 1 when absorption matches a typical diet that meets the goal", () => {
-    // Iron: typical mixed diet absorbs 16%; 18 mg goal -> 2.88 mg expected absorbed.
-    const s = absorptionScore("iron", est(18, 2.88), 18)!;
-    expect(s.expectedAbsorbed).toBeCloseTo(2.88);
+  it("is absorbed ÷ (consumed × typical absorption), so 1 means typical for what was eaten", () => {
+    // Iron: a typical mixed diet absorbs 16%; 10 mg eaten -> 1.6 mg typical absorbed.
+    const s = absorptionScore("iron", est(10, 1.6), 18)!;
+    expect(s.typicalAbsorbed).toBeCloseTo(1.6);
     expect(s.score).toBeCloseTo(1);
-    expect(s.progress).toBeCloseTo(1);
-    expect(s.pairing).toBeCloseTo(1);
     expect(s.scoreLow).toBeCloseTo(0.8);
     expect(s.scoreHigh).toBeCloseTo(1.2);
   });
 
-  it("separates progress (consumed vs goal) from pairing quality", () => {
-    // Half the goal eaten, but absorbed twice as well as a typical diet.
-    const s = absorptionScore("iron", est(9, 2.88), 18)!;
-    expect(s.progress).toBeCloseTo(0.5);
-    expect(s.score).toBeCloseTo(1);
-    expect(s.pairing).toBeCloseTo(2);
+  it("does not depend on how much was eaten or on the goal", () => {
+    // Same absorption rate (twice typical) at a fifth of the goal and at the full goal.
+    const small = absorptionScore("iron", est(3.6, 3.6 * 0.32), 18)!;
+    const full = absorptionScore("iron", est(18, 18 * 0.32), 18)!;
+    const otherGoal = absorptionScore("iron", est(18, 18 * 0.32), 8)!;
+    expect(small.score).toBeCloseTo(2);
+    expect(full.score).toBeCloseTo(2);
+    expect(otherGoal.score).toBeCloseTo(2);
   });
 
   it("rises when orange juice is paired with lentils", () => {
     const score = (foods: Parameters<typeof absorbMeal>[0]) =>
-      absorptionScore("iron", absorbMeal(foods).totals.iron, 18)!;
+      absorptionScore("iron", absorbMeal(foods).totals.iron, 18)!.score!;
     const alone = score([lentils()]);
     const withOj = score([lentils(), orangeJuice()]);
-    expect(withOj.score).toBeGreaterThan(alone.score);
-    expect(withOj.pairing!).toBeGreaterThan(alone.pairing!);
-    // Lentils alone fall short of a typical mixed diet; with juice they come closer or beat it.
-    expect(alone.pairing!).toBeLessThan(1);
+    expect(withOj).toBeGreaterThan(alone);
+    // Lentils alone fall short of a typical mixed diet.
+    expect(alone).toBeLessThan(1);
   });
 
-  it("equals progress for vitamin A (RAE) when the meal has fat", () => {
-    const totals = absorbMeal([carrots(), oliveOil()]).totals.vitamin_a;
-    const s = absorptionScore("vitamin_a", totals, 900)!;
-    expect(s.score).toBeCloseTo(s.progress);
-    expect(s.pairing).toBeCloseTo(1);
+  it("is 1 for vitamin A (RAE) when the meal has fat, whatever the amount", () => {
+    for (const grams of [30, 60, 240]) {
+      const totals = absorbMeal([carrots(grams), oliveOil()]).totals.vitamin_a;
+      expect(absorptionScore("vitamin_a", totals, 900)!.score).toBeCloseTo(1);
+    }
+  });
+
+  it("is 1 for copper, whose typical absorption is read at the amount eaten", () => {
+    const totals = absorbMeal([lentils()]).totals.copper;
+    expect(absorptionScore("copper", totals, 0.9)!.score).toBeCloseTo(1);
   });
 
   it("is not computed for limits, as-eaten nutrients, carbohydrate or missing goals", () => {
@@ -62,8 +66,13 @@ describe("absorption score", () => {
     ).toBeNull();
   });
 
-  it("has no pairing value when nothing was eaten", () => {
-    expect(absorptionScore("zinc", est(0, 0), 11)!.pairing).toBeNull();
+  it("has no value when nothing was eaten (shown as —)", () => {
+    expect(absorptionScore("zinc", est(0, 0), 11)).toEqual({
+      typicalAbsorbed: 0,
+      score: null,
+      scoreLow: null,
+      scoreHigh: null,
+    });
   });
 });
 
@@ -76,7 +85,7 @@ describe("typical absorption", () => {
     expect(typicalAbsorption("folate", 400)!.value).toBe(1);
   });
 
-  it("reads copper off its intake curve at the goal amount", () => {
+  it("reads copper off its intake curve at the daily amount", () => {
     const copper = typicalAbsorption("copper", 0.9)!.value;
     expect(copper).toBeLessThan(0.75);
     expect(copper).toBeGreaterThan(0.12);

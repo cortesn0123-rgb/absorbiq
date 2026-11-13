@@ -39,7 +39,16 @@ export interface GoalRowData {
   overUl: { ul: number } | null;
   /** Estimated absorbed today (engine), when day totals were passed; null = no data. */
   absorbed: { value: number; low: number; high: number } | null;
-  score: { value: number; low: number; high: number; expected: number } | null;
+  /**
+   * Absorption score (absorbed ÷ consumed x typical absorption) for scored nutrients when asked;
+   * `value` is null when nothing was eaten (shown as "—").
+   */
+  score: {
+    value: number | null;
+    low: number | null;
+    high: number | null;
+    typicalAbsorbed: number;
+  } | null;
 }
 
 /** Macros shown in the goals card. Other macros (sub-fats, total sugars) stay in the full list. */
@@ -113,7 +122,11 @@ export function buildGoalRows({
     }
 
     const progress = goalProgress(goal, consumed);
-    const estimate = absorption?.[id];
+    // Nothing logged: 0 eaten (score "—"), not "no data".
+    const estimate =
+      absorption && foods.length === 0
+        ? { consumed: 0, absorbed: 0, low: 0, high: 0 }
+        : absorption?.[id];
     const scored =
       showScore && estimate && goal.per === "day"
         ? absorptionScore(id, estimate, goal.value, factors)
@@ -139,7 +152,7 @@ export function buildGoalRows({
         value: scored.score,
         low: scored.scoreLow,
         high: scored.scoreHigh,
-        expected: scored.expectedAbsorbed,
+        typicalAbsorbed: scored.typicalAbsorbed,
       },
     });
   }
