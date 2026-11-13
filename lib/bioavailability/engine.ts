@@ -6,7 +6,7 @@
 
 import { NUTRIENT_IDS, type NutrientId } from "@/lib/nutrients/registry";
 import { DEFAULT_FACTORS, type FactorTable } from "./factor-table";
-import { buildMealContext } from "./meal-context";
+import { buildMealContext, type MealContext } from "./meal-context";
 import { RULES } from "./rules";
 import {
   DEFAULT_PROFILE,
@@ -25,6 +25,10 @@ import {
 export interface MealOptions {
   /** Copper eaten across the whole day; defaults to the meal's copper. */
   dayCopperMg?: number;
+  /** What-if: changes the meal context before the rules run (used by insights.ts). */
+  adjustContext?: (ctx: MealContext) => MealContext;
+  /** Only estimate these nutrients (the others are reported as no data). Default: all. */
+  only?: readonly NutrientId[];
 }
 
 const NO_DATA: NutrientEstimate = {
@@ -43,10 +47,16 @@ export function absorbMeal(
   table: FactorTable = DEFAULT_FACTORS,
   options: MealOptions = {},
 ): MealAbsorption {
-  const ctx = buildMealContext(foods, table, options.dayCopperMg);
+  const built = buildMealContext(foods, table, options.dayCopperMg);
+  const ctx = options.adjustContext ? options.adjustContext(built) : built;
+  const only = options.only && new Set(options.only);
   const results: FoodAbsorption[] = ctx.foods.map((mealFood) => {
     const nutrients = {} as NutrientEstimates;
     for (const id of NUTRIENT_IDS) {
+      if (only && !only.has(id)) {
+        nutrients[id] = NO_DATA;
+        continue;
+      }
       const consumed = mealFood.amounts[id];
       if (consumed === undefined) {
         nutrients[id] = NO_DATA;

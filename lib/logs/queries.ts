@@ -78,6 +78,44 @@ export async function getDayLogs(supabase: Supabase, date: string): Promise<Logg
   return rows.map(toLoggedFood);
 }
 
+/** Food logs from `from` to `to` (inclusive), oldest first. */
+export async function getLogsInRange(
+  supabase: Supabase,
+  from: string,
+  to: string,
+): Promise<LoggedFood[]> {
+  const rows = check<LogRow[]>(
+    await supabase
+      .from("food_logs")
+      .select(LOG_COLUMNS)
+      .gte("log_date", from)
+      .lte("log_date", to)
+      .order("log_date", { ascending: true })
+      .order("created_at", { ascending: true }),
+    "food logs",
+  );
+  return rows.map(toLoggedFood);
+}
+
+/** Water drunk per day from `from` to `to` (inclusive), in mL. */
+export async function getWaterTotalsInRange(
+  supabase: Supabase,
+  from: string,
+  to: string,
+): Promise<Map<string, number>> {
+  const rows = check<{ log_date: string; ml: number }[]>(
+    await supabase
+      .from("water_logs")
+      .select("log_date, ml")
+      .gte("log_date", from)
+      .lte("log_date", to),
+    "water logs",
+  );
+  const totals = new Map<string, number>();
+  for (const r of rows) totals.set(r.log_date, (totals.get(r.log_date) ?? 0) + r.ml);
+  return totals;
+}
+
 export async function getWaterLogs(supabase: Supabase, date: string): Promise<WaterEntry[]> {
   const rows = check<{ id: number; ml: number; created_at: string }[]>(
     await supabase
@@ -165,9 +203,33 @@ export async function getTrainingSessions(
       .eq("log_date", date),
     "training logs",
   );
-  return rows.map((r) => ({
+  return rows.map(toTrainingSession);
+}
+
+/** Training sessions per day from `from` to `to` (inclusive). */
+export async function getTrainingInRange(
+  supabase: Supabase,
+  from: string,
+  to: string,
+): Promise<Map<string, TrainingSession[]>> {
+  const rows = check<(TrainingRow & { log_date: string })[]>(
+    await supabase
+      .from("training_logs")
+      .select("log_date, minutes, intensity, sweat_loss_kg")
+      .gte("log_date", from)
+      .lte("log_date", to),
+    "training logs",
+  );
+  const byDay = new Map<string, TrainingSession[]>();
+  for (const r of rows)
+    byDay.set(r.log_date, [...(byDay.get(r.log_date) ?? []), toTrainingSession(r)]);
+  return byDay;
+}
+
+function toTrainingSession(r: TrainingRow): TrainingSession {
+  return {
     minutes: r.minutes,
     intensity: isTrainingIntensity(r.intensity) ? r.intensity : "moderate",
     sweatLossKg: r.sweat_loss_kg === null ? null : Number(r.sweat_loss_kg),
-  }));
+  };
 }

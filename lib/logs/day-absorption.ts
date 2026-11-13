@@ -4,6 +4,7 @@ import {
   absorbDay,
   toEngineFood,
   type DayAbsorption,
+  type DayMealInput,
   type EngineProfile,
   type FactorTable,
   type NutrientEstimates,
@@ -20,11 +21,8 @@ export interface DayAbsorptionView {
   byMeal: Map<string, TotalEstimates>;
 }
 
-export function absorbLogs(
-  logs: readonly LoggedFood[],
-  profile: EngineProfile,
-  table: FactorTable,
-): DayAbsorptionView {
+/** A day's logs as engine input: one meal per occasion, in occasion order. */
+export function mealInputs(logs: readonly LoggedFood[]): DayMealInput[] {
   const meals = new Map<string, { occasion: MealOccasion; logs: LoggedFood[] }>();
   for (const log of logs) {
     const key = occasionKey(log.occasion);
@@ -36,15 +34,19 @@ export function absorbLogs(
     compareOccasions(a[1].occasion, b[1].occasion),
   );
 
-  const day = absorbDay(
-    ordered.map(([key, meal]) => ({
-      key,
-      label: occasionLabel(meal.occasion),
-      foods: meal.logs.map((log) => toEngineFood(String(log.id), log.food, log.grams)),
-    })),
-    profile,
-    table,
-  );
+  return ordered.map(([key, meal]) => ({
+    key,
+    label: occasionLabel(meal.occasion),
+    foods: meal.logs.map((log) => toEngineFood(String(log.id), log.food, log.grams)),
+  }));
+}
+
+export function absorbLogs(
+  logs: readonly LoggedFood[],
+  profile: EngineProfile,
+  table: FactorTable,
+): DayAbsorptionView {
+  const day = absorbDay(mealInputs(logs), profile, table);
 
   const byLog = new Map<number, NutrientEstimates>();
   const byMeal = new Map<string, TotalEstimates>();

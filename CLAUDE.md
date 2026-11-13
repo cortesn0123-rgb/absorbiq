@@ -166,3 +166,6 @@ One registry file defines every nutrient. Every other part of the app reads from
 - Nutrient selection: `lib/nutrients/tracking.ts` (presets, `trackedMicros`, `visibleNutrients`; no row in `tracked_nutrients` = tracked). Macros are always shown. Every nutrient list takes a `visible` list from there, and so must the AI helper.
 - Goals: `lib/nutrients/goals.ts` applies custom overrides to `getDailyTargets` output; `lib/logs/day-goals.ts` builds the Day view's consumed-vs-goal rows. `profiles.goal_view` only toggles the absorption score next to each bar; bars always use consumed intake.
 - Checks: `npm run check` (typecheck + lint + tests). Format with `npm run format`.
+- Dashboard: `/home` (landing page after sign-in); the Day view stays at `/dashboard`. Data in `lib/logs/dashboard.ts` (bands, gaps, macro card, 7/30-day history) is built from `buildGoalRows`, so numbers match the Day view. The bar marker is the absorption score, never absorbed vs goal.
+- Absorption insights: `lib/bioavailability/insights.ts` (engine what-ifs via `absorbMeal`'s `adjustContext`/`only` options; ranked by loss ÷ goal's expected absorbed). Not AI.
+- `/helper?nutrient=<id>` is a placeholder until the AI helper phase.

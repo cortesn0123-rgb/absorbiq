@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
 
 /** Routes that require a signed-in user. */
-const PROTECTED_PREFIXES = ["/dashboard", "/log", "/settings", "/onboarding"];
+const PROTECTED_PREFIXES = ["/home", "/dashboard", "/log", "/helper", "/settings", "/onboarding"];
 
 /**
  * Refreshes the Supabase session cookie on every request and does an optimistic redirect for
@@ -48,7 +48,7 @@ export async function updateSession(request: NextRequest) {
     return redirectTo("/login");
   }
   if (signedIn && path === "/login") {
-    return redirectTo("/dashboard");
+    return redirectTo("/home");
   }
   return response;
 }

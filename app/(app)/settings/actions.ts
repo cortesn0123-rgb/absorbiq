@@ -28,7 +28,7 @@ export async function saveProfile(
     return null;
   });
   if (!result.ok) return { error: result.error, saved: false };
-  if (mode === "onboarding") redirect("/dashboard");
+  if (mode === "onboarding") redirect("/home");
   refresh();
   return { error: null, saved: true };
 }

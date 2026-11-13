@@ -333,3 +333,15 @@ gaps and, among foods that do, prefers pairings that raise the absorption score.
    `npm run db:absorption-seed > supabase/migrations/<timestamp>_absorption_factors.sql`
 3. Run `npm run check`. A test fails if the latest seed migration does not match `factors.ts`.
 4. Apply the migration. All past and future days use the new value from then on.
+
+## Absorption insights (dashboard tips)
+
+`lib/bioavailability/insights.ts` turns the rules above into up to three plain-English tips per
+day. Each tip fires exactly when the matching reason does: tea or coffee with a plant-iron meal,
+calcium from another food held back non-heme iron, no vitamin C or meat with plant iron, a meal
+under the adequate-fat threshold with fat-soluble vitamins, calcium bound by oxalate, and zinc in
+the WHO "low" phytate:zinc band. Each is sized by rerunning the meal without the inhibitor (what
+if: no tea, no calcium, enough fat) or, when there is nothing to remove, against the typical
+absorption used by the absorption score. Tips are ranked by the loss as a share of the goal's
+expected absorbed amount (goal × typical absorption), only for tracked nutrients with a goal; each
+kind of tip is shown once, for the meal where it costs the most.

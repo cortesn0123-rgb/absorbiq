@@ -37,6 +37,8 @@ export interface GoalRowData {
   /** Extra line under the bar, e.g. "Highest: Snack 2". */
   detail?: string;
   overUl: { ul: number } | null;
+  /** Estimated absorbed today (engine), when day totals were passed; null = no data. */
+  absorbed: { value: number; low: number; high: number } | null;
   score: { value: number; low: number; high: number; expected: number } | null;
 }
 
@@ -60,8 +62,8 @@ export interface DayGoalInput {
   goals: Goals;
   /** One entry per logged food: its meal occasion and nutrient amounts for the portion. */
   foods: readonly { occasion: MealOccasion; amounts: NutrientAmounts }[];
-  /** Day totals from the bioavailability engine (consumed and absorbed). */
-  absorption: TotalEstimates;
+  /** Day totals from the bioavailability engine (consumed and absorbed); needed for scores. */
+  absorption?: TotalEstimates;
   showScore: boolean;
   factors?: FactorTable;
 }
@@ -111,9 +113,10 @@ export function buildGoalRows({
     }
 
     const progress = goalProgress(goal, consumed);
+    const estimate = absorption?.[id];
     const scored =
-      showScore && goal.per === "day"
-        ? absorptionScore(id, absorption[id], goal.value, factors)
+      showScore && estimate && goal.per === "day"
+        ? absorptionScore(id, estimate, goal.value, factors)
         : null;
 
     rows.push({
@@ -128,6 +131,10 @@ export function buildGoalRows({
       source: goalSource(goal),
       detail,
       overUl: progress.overUl && goal.ul !== null ? { ul: goal.ul } : null,
+      absorbed:
+        estimate && estimate.absorbed !== null && estimate.low !== null && estimate.high !== null
+          ? { value: estimate.absorbed, low: estimate.low, high: estimate.high }
+          : null,
       score: scored && {
         value: scored.score,
         low: scored.scoreLow,

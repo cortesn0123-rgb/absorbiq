@@ -28,6 +28,9 @@ export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
 export const TRAINING_TYPES = ["none", "endurance", "strength", "team_sport", "mixed"] as const;
 export type TrainingType = (typeof TRAINING_TYPES)[number];
 
+/** Atwater factors used for % of energy (kcal per gram). */
+export const KCAL_PER_G = { protein: 4, carbohydrate: 4, fat: 9 } as const;
+
 export interface TargetInput {
   tier: Tier;
   sex: Sex;

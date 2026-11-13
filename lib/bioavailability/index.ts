@@ -10,6 +10,14 @@ export { absorbDay, absorbMeal, sumEstimates } from "./engine";
 export { DEFAULT_FACTORS, FactorTable } from "./factor-table";
 export { FACTOR_ROWS, type FactorRow } from "./factors";
 export {
+  MIN_INSIGHT_SHARE,
+  dayInsights,
+  mealInsights,
+  rankInsights,
+  type Insight,
+  type InsightKind,
+} from "./insights";
+export {
   absorptionScore,
   typicalAbsorption,
   type AbsorptionScore,

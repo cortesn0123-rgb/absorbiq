@@ -5,11 +5,11 @@ describe("safeNextPath", () => {
   it.each([
     ["/dashboard", "/dashboard"],
     ["/dashboard?day=2026-01-01", "/dashboard?day=2026-01-01"],
-    [null, "/dashboard"],
-    ["", "/dashboard"],
-    ["https://evil.com", "/dashboard"],
-    ["//evil.com", "/dashboard"],
-    ["/\\evil.com", "/dashboard"],
+    [null, "/home"],
+    ["", "/home"],
+    ["https://evil.com", "/home"],
+    ["//evil.com", "/home"],
+    ["/\\evil.com", "/home"],
   ])("%s -> %s", (input, expected) => {
     expect(safeNextPath(input)).toBe(expected);
   });
