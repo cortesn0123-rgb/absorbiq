@@ -43,6 +43,23 @@ export async function requireProfile(): Promise<{
   return { user, profile, supabase };
 }
 
+/**
+ * Foods the AI helper must not suggest. Empty if the avoided_foods column is missing (its
+ * migration not run yet), so the rest of the app keeps working.
+ */
+export async function loadAvoidedFoods(supabase: Supabase, userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("avoided_foods")
+    .eq("id", userId)
+    .maybeSingle<{ avoided_foods: string[] | null }>();
+  if (error) {
+    console.error(`Loading avoided foods failed: ${error.message}`);
+    return [];
+  }
+  return data?.avoided_foods ?? [];
+}
+
 interface TrackingDbRow {
   nutrient_id: string;
   enabled: boolean;

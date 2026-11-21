@@ -1,8 +1,12 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
 import { DISCLAIMER } from "@/components/Disclaimer";
-import { requireUser } from "@/lib/auth";
+import { DAILY_REQUEST_LIMIT } from "@/lib/ai/request";
+import { TZ_COOKIE, todayIn } from "@/lib/dates";
 import { NUTRIENTS, isNutrientId } from "@/lib/nutrients/registry";
+import { requireProfile } from "@/lib/settings";
+import { HelperChat } from "./HelperChat";
 
 export const metadata = { title: "AI helper · Micronutrient Tracker" };
 
@@ -15,37 +19,43 @@ export default function HelperPage({ searchParams }: PageProps<"/helper">) {
 }
 
 /**
- * Placeholder for the AI helper (a later phase). The dashboard links here with
- * ?nutrient=<id>; the request is pre-filled so the helper can pick it up.
+ * The AI helper. "Ask for suggestions" on the dashboard opens it with ?ask=1, and a gap's "Ask AI
+ * helper" with ?nutrient=<id>; both send the request straight away.
  */
 async function Helper({ searchParams }: Pick<PageProps<"/helper">, "searchParams">) {
-  await requireUser();
-  const { nutrient } = await searchParams;
+  const { supabase } = await requireProfile();
+  const { nutrient, ask } = await searchParams;
   const def = typeof nutrient === "string" && isNutrientId(nutrient) ? NUTRIENTS[nutrient] : null;
   const request = def
     ? `Suggest foods and portions to close my ${def.name} gap for the rest of today, paired so they are well absorbed.`
     : "Suggest foods and portions to close my nutrient gaps for the rest of today.";
 
+  const today = todayIn((await cookies()).get(TZ_COOKIE)?.value);
+  const { count } = await supabase
+    .from("ai_suggestions")
+    .select("id", { count: "exact", head: true })
+    .eq("suggestion_date", today);
+
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">AI helper</h1>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="text-zinc-600 dark:text-zinc-400">Your request</span>
-        <textarea
-          defaultValue={request}
-          rows={3}
-          disabled
-          className="rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-base dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </label>
-      <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-        The AI helper is coming soon. It will suggest foods; the app will look them up in FoodData
-        Central and calculate their nutrients and absorption itself.
+      <div className="flex items-end justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">AI helper</h1>
+        <Link
+          href="/home"
+          className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
+        >
+          ← Dashboard
+        </Link>
+      </div>
+      <HelperChat
+        initialRequest={request}
+        autoStart={def !== null || ask === "1"}
+        requestsLeft={Math.max(0, DAILY_REQUEST_LIMIT - (count ?? 0))}
+      />
+      <p className="text-xs text-zinc-500">
+        Suggestions come from Claude (AI); every amount, gap and absorption figure is calculated by
+        this app from USDA FoodData Central. {DISCLAIMER}
       </p>
-      <p className="text-xs text-zinc-500">{DISCLAIMER}</p>
-      <Link href="/home" className="text-sm text-emerald-700 hover:underline dark:text-emerald-400">
-        ← Back to dashboard
-      </Link>
     </div>
   );
 }

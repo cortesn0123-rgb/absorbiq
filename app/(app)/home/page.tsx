@@ -236,6 +236,12 @@ function Gaps({ rows, logged }: { rows: GoalRowData[]; logged: boolean }) {
           ))}
         </ul>
       )}
+      <Link
+        href="/helper?ask=1"
+        className="mt-3 flex h-11 items-center justify-center rounded-lg bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700"
+      >
+        Ask for suggestions
+      </Link>
     </section>
   );
 }

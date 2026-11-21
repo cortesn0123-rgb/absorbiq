@@ -13,6 +13,11 @@ const LINKS = [
     title: "Profile",
     description: "Age, sex, body size, activity and training.",
   },
+  {
+    href: "/settings/avoided",
+    title: "Foods to avoid",
+    description: "Foods the AI helper leaves out of its suggestions.",
+  },
 ];
 
 export default function SettingsPage() {
