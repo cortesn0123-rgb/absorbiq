@@ -9,7 +9,7 @@ Date: 2026-11-22. Scope: Row Level Security on every table, secrets in client co
 | H1  | High     | `ai_suggestions` had delete and full-row update policies. The 30-a-day AI limit counts those rows, so a signed-in user could delete them (or change `suggestion_date`) through the Supabase API and get unlimited Claude calls on our key. | Fixed in `supabase/migrations/20261122000000_ai_suggestions_lockdown.sql`: delete policy dropped, update limited to the `accepted` column. Needs the owner to run it (NEEDS-YOU M-71). |
 | L1  | Low      | The daily limit counts by `suggestion_date`, which comes from the user's timezone cookie. Changing the cookie can shift "today" by up to a day, so at most about twice the limit in a 24-hour span.                                        | Open. Changing the count to a rolling 24 hours touches the AI helper, which waits on its browser test (M-P6T).                                                                         |
 | L2  | Low      | Two helper requests sent at the same moment both pass the count before either row is saved, so the limit can be exceeded by the number of parallel requests.                                                                               | Open, same reason as L1.                                                                                                                                                               |
-| L3  | Low      | `/api/foods/search` has no per-user rate limit; a signed-in user could use up the FDC key's hourly quota.                                                                                                                                  | Open. Searches need sign-in, and FDC limits per key, so the risk is a temporary outage, not cost.                                                                                      |
+| L3  | Low      | `/api/foods/search` has no per-user rate limit; a signed-in user could use up the FDC key's hourly quota.                                                                                                                                  | Fixed: 30 searches a minute and 200 an hour per user (`lib/rate-limit.ts`, in memory per server instance), 429 with Retry-After.                                                       |
 
 Checked and fine:
 
@@ -21,8 +21,8 @@ Checked and fine:
 
 ## Bugs
 
-| ID  | Finding                                                                                                                                            | Status                                                                                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| ID  | Finding                                                                                                                                            | Status                                                            |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | B1  | Low energy availability (`lib/nutrients/energy-availability.ts`, CLAUDE.md section 4) is implemented and tested but not shown anywhere in the app. | Fixed: shown on the Day view for finished Athletic training days. |
 
 ## Dead code
