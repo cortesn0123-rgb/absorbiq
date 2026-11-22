@@ -19,6 +19,11 @@ const LINKS = [
     description: "Foods the AI helper leaves out of its suggestions.",
   },
   {
+    href: "/settings/export",
+    title: "Export data",
+    description: "Download what you ate and absorbed as a CSV file.",
+  },
+  {
     href: "/about/absorption",
     title: "About absorption",
     description: "How the absorbed estimates work, and their limits.",
