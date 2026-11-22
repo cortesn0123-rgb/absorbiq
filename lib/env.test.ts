@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSupabaseEnv } from "./env";
+import { missingEnv, validateSupabaseEnv } from "./env";
 
 const url = "https://abcd1234.supabase.co";
 
@@ -24,5 +24,18 @@ describe("validateSupabaseEnv", () => {
     expect(() => validateSupabaseEnv("sb_publishable_abc", "sb_publishable_xyz")).toThrow(
       /must be your project URL/,
     );
+  });
+});
+
+describe("missingEnv", () => {
+  it("lists missing and blank variables", () => {
+    expect(
+      missingEnv({
+        NEXT_PUBLIC_SUPABASE_URL: url,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_abc",
+        SUPABASE_SECRET_KEY: " ",
+        FDC_API_KEY: "x",
+      }),
+    ).toEqual(["SUPABASE_SECRET_KEY", "ANTHROPIC_API_KEY"]);
   });
 });

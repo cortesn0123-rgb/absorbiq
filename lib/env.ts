@@ -31,3 +31,17 @@ export function validateSupabaseEnv(
   }
   return { url, anonKey };
 }
+
+/** Every variable the app needs in production (see .env.example). */
+export const REQUIRED_ENV = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SECRET_KEY",
+  "FDC_API_KEY",
+  "ANTHROPIC_API_KEY",
+] as const;
+
+/** Names of required variables that are missing or blank. */
+export function missingEnv(env: Record<string, string | undefined>): string[] {
+  return REQUIRED_ENV.filter((name) => !env[name]?.trim());
+}
