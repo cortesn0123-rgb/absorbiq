@@ -33,6 +33,7 @@ import {
   visibleNutrients,
   type ViewFilter,
 } from "@/lib/nutrients/tracking";
+import { lowEnergyAvailabilityFlag } from "@/lib/nutrients/energy-availability";
 import { engineProfile, targetInput } from "@/lib/profile";
 import { loadTracking, requireProfile } from "@/lib/settings";
 import { DayNav } from "./DayNav";
@@ -131,6 +132,16 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
     logs.map((l) => [l.id, nutrientsForGrams(l.food.nutrientsPer100g, l.grams)]),
   );
   const totals = sumNutrients([...portions.values()]);
+  const lowEa = lowEnergyAvailabilityFlag({
+    athletic: profile.targetTier === "athletic",
+    dayComplete: date < today,
+    sex: profile.sex,
+    weightKg: profile.weightKg,
+    heightCm: profile.heightCm,
+    bodyFatPct: profile.bodyFatPct,
+    intakeKcal: totals.energy.amount ?? 0,
+    sessions: training,
+  });
   const snackNumbers = snackSummaries(logs).map((s) => s.snackNumber);
   const favorites = new Set(favoriteIds);
   const goalRows = buildGoalRows({
@@ -165,6 +176,19 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
           {formatNumber(totals.carbohydrate.amount ?? 0)} g · Fat{" "}
           {formatNumber(totals.fat.amount ?? 0)} g
         </p>
+        {lowEa && (
+          <div role="note" className="mt-3 rounded-lg border border-status-warning p-3 text-sm">
+            <p className="font-medium">
+              Low energy availability: about {formatNumber(lowEa.kcalPerKgFfm)} kcal per kg of
+              fat-free mass
+            </p>
+            {lowEa.notes.map((n) => (
+              <p key={n} className="mt-1 text-zinc-600 dark:text-zinc-400">
+                {n}
+              </p>
+            ))}
+          </div>
+        )}
         {logs.length > 0 && (
           <details className="mt-3 text-sm">
             <summary className="cursor-pointer py-1 text-zinc-600 dark:text-zinc-400">
