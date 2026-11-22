@@ -18,6 +18,11 @@ const LINKS = [
     title: "Foods to avoid",
     description: "Foods the AI helper leaves out of its suggestions.",
   },
+  {
+    href: "/about/absorption",
+    title: "About absorption",
+    description: "How the absorbed estimates work, and their limits.",
+  },
 ];
 
 export default function SettingsPage() {
