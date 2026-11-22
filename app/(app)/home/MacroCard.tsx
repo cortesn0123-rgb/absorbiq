@@ -8,7 +8,7 @@ const pct = (share: number) => `${Math.round(share * 100)}%`;
 export function MacroCard({ macros }: { macros: MacroSummary }) {
   return (
     <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-      <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Macros</h2>
+      <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Macros</h2>
       {macros.energy && (
         <NutrientBar
           row={{ ...macros.energy, name: "Calories" }}
@@ -33,7 +33,7 @@ export function MacroCard({ macros }: { macros: MacroSummary }) {
         </li>
       </ul>
 
-      <h3 className="mt-4 text-xs font-semibold tracking-wide text-zinc-500 uppercase">Limits</h3>
+      <h3 className="mt-4 text-xs font-semibold tracking-wide text-muted uppercase">Limits</h3>
       <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
         {macros.limits.map((row) => (
           <li key={row.id}>
@@ -46,13 +46,13 @@ export function MacroCard({ macros }: { macros: MacroSummary }) {
               <span>{n.name}</span>
               <span className="tabular-nums">
                 {n.consumed === null ? (
-                  <span className="text-zinc-400 italic">no data</span>
+                  <span className="text-muted italic">no data</span>
                 ) : (
                   formatAmount(n.consumed, n.unit)
                 )}
               </span>
             </div>
-            <p className="text-xs text-zinc-500">No set limit for your tier: keep it low.</p>
+            <p className="text-xs text-muted">No set limit for your tier: keep it low.</p>
           </li>
         ))}
       </ul>
@@ -72,7 +72,7 @@ function ShareRow({ share }: { share: EnergyShare }) {
   return (
     <div>
       {share.row && <NutrientBar row={share.row} showMarker={false} showScore={false} compact />}
-      <p className="-mt-1 pb-1.5 text-xs text-zinc-500 tabular-nums">
+      <p className="-mt-1 pb-1.5 text-xs text-muted tabular-nums">
         {share.pctOfCalories === null ? "–" : pct(share.pctOfCalories)} of calories
         {share.targetPct && (
           <>

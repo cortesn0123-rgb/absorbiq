@@ -3,7 +3,7 @@ export const DISCLAIMER =
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-200 px-4 py-4 text-center text-xs text-zinc-500 dark:border-zinc-800">
+    <footer className="border-t border-zinc-200 px-4 py-4 text-center text-xs text-muted dark:border-zinc-800">
       {DISCLAIMER}
     </footer>
   );

@@ -33,9 +33,9 @@ export default function SettingsPage() {
             >
               <span className="flex flex-col">
                 <span className="font-medium">{l.title}</span>
-                <span className="text-sm text-zinc-500">{l.description}</span>
+                <span className="text-sm text-muted">{l.description}</span>
               </span>
-              <span aria-hidden className="text-zinc-400">
+              <span aria-hidden className="text-muted">
                 ›
               </span>
             </Link>

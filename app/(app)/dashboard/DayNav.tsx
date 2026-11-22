@@ -36,7 +36,7 @@ export function DayNav({
       <div className="flex flex-col items-center">
         <label className="relative cursor-pointer text-center">
           <span className="block text-2xl font-semibold tracking-tight">{label}</span>
-          <span className="block text-sm text-zinc-500">{longDate}</span>
+          <span className="block text-sm text-muted">{longDate}</span>
           <input
             type="date"
             value={date}

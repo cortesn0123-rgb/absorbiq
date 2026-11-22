@@ -39,7 +39,7 @@ export function PortionInput({
               className={chipClass(selected)}
             >
               {p.label}{" "}
-              <span className={selected ? "text-emerald-100" : "text-zinc-500"}>
+              <span className={selected ? "text-emerald-100" : "text-muted"}>
                 · {formatNumber(p.grams)} g
               </span>
             </button>
@@ -69,7 +69,7 @@ export function PortionInput({
               {COUNT_LABELS[c] ?? c}
             </button>
           ))}
-          <label className="flex items-center gap-2 text-sm text-zinc-500">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <span className="sr-only">Number of portions</span>×
             <input
               inputMode="decimal"

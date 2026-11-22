@@ -44,7 +44,13 @@ export const metadata = { title: "Day · AbsorbIQ" };
 
 export default function DayPage({ searchParams }: PageProps<"/dashboard">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Day searchParams={searchParams} />
     </Suspense>
   );
@@ -149,10 +155,10 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
       <FilterChips date={date} today={today} filter={filter} />
 
       <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-        <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Consumed</h2>
+        <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Consumed</h2>
         <p className="mt-1 text-3xl font-semibold tabular-nums">
           {formatNumber(totals.energy.amount ?? 0)}{" "}
-          <span className="text-base font-normal text-zinc-500">kcal</span>
+          <span className="text-base font-normal text-muted">kcal</span>
         </p>
         <p className="mt-1 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
           Protein {formatNumber(totals.protein.amount ?? 0)} g · Carbs{" "}
@@ -173,7 +179,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
 
       <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Goals</h2>
+          <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Goals</h2>
           <Link
             href="/settings/nutrients"
             className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
@@ -182,9 +188,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
           </Link>
         </div>
         {goalRows.length === 0 ? (
-          <p className="py-2 text-sm text-zinc-500">
-            No tracked nutrients with a goal in this view.
-          </p>
+          <p className="py-2 text-sm text-muted">No tracked nutrients with a goal in this view.</p>
         ) : (
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {goalRows.map((row) => (
@@ -192,7 +196,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
             ))}
           </ul>
         )}
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-muted">
           Bars compare what you ate with your goal.
           {profile.goalView === "absorption" &&
             " The absorption score (1.0 = typical absorption for what you ate) shows whether your food pairings help or hold back absorption."}{" "}
@@ -220,7 +224,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
               <h2 className="font-semibold">
                 {label}
                 {mealLogs.length > 0 && (
-                  <span className="ml-2 text-sm font-normal text-zinc-500 tabular-nums">
+                  <span className="ml-2 text-sm font-normal text-muted tabular-nums">
                     {formatNumber(kcal)} kcal
                   </span>
                 )}
@@ -234,7 +238,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
               </Link>
             </div>
             {mealLogs.length === 0 ? (
-              <p className="py-3 text-sm text-zinc-400">Nothing logged.</p>
+              <p className="py-3 text-sm text-muted">Nothing logged.</p>
             ) : (
               <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {mealLogs.map((log) => (
@@ -264,7 +268,7 @@ async function Day({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams
       })}
 
       {logs.length > 0 && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           Absorbed amounts are estimates that depend on what you ate together in each meal; tap one
           to see why. &ldquo;No data&rdquo; or &ldquo;–&rdquo; means FoodData Central has no value
           for that nutrient, which is not the same as zero.

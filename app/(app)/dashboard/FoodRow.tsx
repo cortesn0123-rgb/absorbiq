@@ -71,7 +71,7 @@ export function FoodRow({
               </span>
             )}
           </span>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-muted">
             {formatPortion(log.grams, log.portionLabel, log.portionCount)}
             {log.portionLabel && ` · ${formatNumber(log.grams)} g`}
             {log.food.brand && ` · ${log.food.brand}`}
@@ -80,7 +80,7 @@ export function FoodRow({
             <MacroLine amounts={amounts} />
           </span>
         </span>
-        <span aria-hidden className="text-zinc-400">
+        <span aria-hidden className="text-muted">
           {open ? "▴" : "▾"}
         </span>
       </button>
@@ -194,7 +194,7 @@ function EditForm({
       <p className="text-sm">
         {portion ? (
           <>
-            <span className="text-zinc-500">{formatNumber(portion.grams)} g · </span>
+            <span className="text-muted">{formatNumber(portion.grams)} g · </span>
             <MacroLine amounts={nutrientsForGrams(log.food.nutrientsPer100g, portion.grams)} />
           </>
         ) : (

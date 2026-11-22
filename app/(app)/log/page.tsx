@@ -18,7 +18,13 @@ export const metadata = { title: "Log food · AbsorbIQ" };
 
 export default function LogPage({ searchParams }: PageProps<"/log">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <LogScreen searchParams={searchParams} />
     </Suspense>
   );

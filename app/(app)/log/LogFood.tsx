@@ -172,7 +172,7 @@ export function LogFood({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Log food</h1>
-          <p className="text-sm text-zinc-500">{dayLabel}</p>
+          <p className="text-sm text-muted">{dayLabel}</p>
         </div>
         <Link
           href={`/dashboard?date=${date}`}
@@ -223,14 +223,14 @@ export function LogFood({
 
           {searchActive ? (
             <section aria-live="polite" aria-busy={!current}>
-              {!current && <p className="py-3 text-sm text-zinc-500">Searching…</p>}
+              {!current && <p className="py-3 text-sm text-muted">Searching…</p>}
               {current?.error && (
                 <p role="alert" className="py-3 text-sm text-red-600 dark:text-red-400">
                   {current.error}
                 </p>
               )}
               {current && !current.error && current.results.length === 0 && (
-                <p className="py-3 text-sm text-zinc-500">No foods found. Try another word.</p>
+                <p className="py-3 text-sm text-muted">No foods found. Try another word.</p>
               )}
               {current && current.results.length > 0 && (
                 <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -243,7 +243,7 @@ export function LogFood({
                         className="flex min-h-14 w-full items-center justify-between gap-3 py-2 text-left hover:bg-zinc-50 disabled:opacity-60 dark:hover:bg-zinc-900"
                       >
                         <span>{r.name}</span>
-                        <span className="shrink-0 text-xs text-zinc-500">
+                        <span className="shrink-0 text-xs text-muted">
                           {loadingFdcId === r.fdcId ? "Loading…" : sourceLabel(r)}
                         </span>
                       </button>
@@ -304,9 +304,9 @@ function QuickList({
 }) {
   return (
     <section>
-      <h2 className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">{title}</h2>
+      <h2 className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">{title}</h2>
       {items.length === 0 ? (
-        <p className="py-2 text-sm text-zinc-500">{empty}</p>
+        <p className="py-2 text-sm text-muted">{empty}</p>
       ) : (
         <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {items.map((item) => (
@@ -318,7 +318,7 @@ function QuickList({
               >
                 <span>{item.food.name}</span>
                 <span className="text-xs">
-                  <span className="text-zinc-500">
+                  <span className="text-muted">
                     {formatPortion(item.grams, item.portionLabel, item.portionCount)} ·{" "}
                   </span>
                   <MacroLine amounts={nutrientsForGrams(item.food.nutrientsPer100g, item.grams)} />

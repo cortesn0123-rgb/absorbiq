@@ -71,12 +71,12 @@ export function NutrientList({
   const anyPartial = defs.some((d) => values[d.id].partial);
   const sections = SECTIONS.filter(({ category }) => defs.some((d) => d.category === category));
   if (sections.length === 0) {
-    return <p className="text-sm text-zinc-500">No tracked nutrients in this view.</p>;
+    return <p className="text-sm text-muted">No tracked nutrients in this view.</p>;
   }
   return (
     <div className="flex flex-col gap-4 text-sm">
       {showAbsorbed && (
-        <div className="flex justify-end gap-3 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+        <div className="flex justify-end gap-3 text-xs font-semibold tracking-wide text-muted uppercase">
           <span className="w-20 text-right">Eaten</span>
           <span className="w-28 text-right">Absorbed</span>
         </div>
@@ -87,7 +87,7 @@ export function NutrientList({
             key={category}
             className={category === "macro" && !showAbsorbed ? "sm:col-span-2" : undefined}
           >
-            <h4 className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+            <h4 className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">
               {title}
             </h4>
             <dl className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -107,12 +107,12 @@ export function NutrientList({
         ))}
       </div>
       {showAbsorbed && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           Absorbed amounts are estimates (~) with a likely range. Tap one to see why.
         </p>
       )}
       {anyPartial && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           <span className="text-amber-600">*</span> Some foods have no data for this nutrient, so
           the total may be low.
         </p>

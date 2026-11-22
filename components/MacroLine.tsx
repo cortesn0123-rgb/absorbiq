@@ -12,7 +12,7 @@ export function MacroLine({ amounts }: { amounts: NutrientAmounts }) {
       <span className="font-medium text-foreground">
         {amounts.energy === undefined ? "–" : formatNumber(amounts.energy)} kcal
       </span>
-      <span className="text-zinc-500">
+      <span className="text-muted">
         {" · "}P {grams(amounts.protein)} · C {grams(amounts.carbohydrate)} · F {grams(amounts.fat)}
       </span>
     </span>

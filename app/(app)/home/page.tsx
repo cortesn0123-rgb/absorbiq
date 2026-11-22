@@ -37,11 +37,17 @@ export const metadata = { title: "Dashboard · AbsorbIQ" };
 const HISTORY_DAYS = 30;
 
 const cardClass = "rounded-xl border border-zinc-200 p-4 dark:border-zinc-800";
-const headingClass = "text-xs font-semibold tracking-wide text-zinc-500 uppercase";
+const headingClass = "text-xs font-semibold tracking-wide text-muted uppercase";
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Dashboard />
     </Suspense>
   );
@@ -121,7 +127,7 @@ async function Dashboard() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Today</h1>
-          <p className="text-sm text-zinc-500">{formatLongDate(today)}</p>
+          <p className="text-sm text-muted">{formatLongDate(today)}</p>
         </div>
         <Link
           href="/dashboard"
@@ -146,7 +152,7 @@ async function Dashboard() {
           </Link>
         </div>
         {micros.length === 0 ? (
-          <p className="py-2 text-sm text-zinc-500">
+          <p className="py-2 text-sm text-muted">
             You are not tracking any vitamins or minerals with a goal.
           </p>
         ) : (
@@ -158,7 +164,7 @@ async function Dashboard() {
             ))}
           </ul>
         )}
-        <p className="mt-2 text-xs text-zinc-500" title={MARKER_NOTE}>
+        <p className="mt-2 text-xs text-muted" title={MARKER_NOTE}>
           Bars show what you ate vs your goal. The thin marker shifts that by the absorption score
           (estimate): ahead of the bar when your food pairings helped absorption, behind when they
           held it back.
@@ -212,7 +218,7 @@ function Gaps({ rows, logged }: { rows: GoalRowData[]; logged: boolean }) {
     <section className={cardClass}>
       <h2 className={headingClass}>Biggest gaps</h2>
       {rows.length === 0 ? (
-        <p className="py-2 text-sm text-zinc-500">
+        <p className="py-2 text-sm text-muted">
           {logged ? "Every tracked goal is met. Nice work." : "Log food to see your gaps."}
         </p>
       ) : (
@@ -221,7 +227,7 @@ function Gaps({ rows, logged }: { rows: GoalRowData[]; logged: boolean }) {
             <li key={r.id} className="flex items-center justify-between gap-3 py-2">
               <div className="min-w-0 text-sm">
                 <p className="font-medium">{r.name}</p>
-                <p className="text-zinc-500 tabular-nums">
+                <p className="text-muted tabular-nums">
                   {formatAmount(r.consumed ?? 0, r.unit)} of {r.goalLabel} ·{" "}
                   {Math.round((r.ratio ?? 0) * 100)}%
                 </p>
@@ -251,7 +257,7 @@ function Insights({ insights, logged }: { insights: Insight[]; logged: boolean }
     <section className={cardClass}>
       <h2 className={headingClass}>Absorption insights</h2>
       {insights.length === 0 ? (
-        <p className="py-2 text-sm text-zinc-500">
+        <p className="py-2 text-sm text-muted">
           {logged
             ? "Nothing in today's meals is holding back absorption of the nutrients you track."
             : "Log meals to get tips on food pairings."}
@@ -268,7 +274,7 @@ function Insights({ insights, logged }: { insights: Insight[]; logged: boolean }
           ))}
         </ul>
       )}
-      <p className="mt-2 text-xs text-zinc-500">
+      <p className="mt-2 text-xs text-muted">
         From the absorption engine&apos;s estimates for what you ate together in each meal, not from
         AI. Amounts marked ~ are estimates.
       </p>

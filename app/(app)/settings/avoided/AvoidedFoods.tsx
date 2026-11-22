@@ -66,7 +66,7 @@ export function AvoidedFoods({ initial }: { initial: string[] }) {
         </p>
       )}
       {words.length === 0 ? (
-        <p className="text-sm text-zinc-500">No foods saved.</p>
+        <p className="text-sm text-muted">No foods saved.</p>
       ) : (
         <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
           {words.map((w) => (

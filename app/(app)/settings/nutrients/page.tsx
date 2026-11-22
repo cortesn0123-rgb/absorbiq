@@ -12,7 +12,13 @@ export const metadata = { title: "Nutrients · AbsorbIQ" };
 
 export default function NutrientsPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Nutrients />
     </Suspense>
   );

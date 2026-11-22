@@ -84,7 +84,7 @@ export function HelperChat({
   return (
     <div className="flex flex-col gap-4">
       {turns.length === 0 && !pending && (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted">
           Ask for foods to close today&apos;s gaps. Follow up with things like &ldquo;no
           dairy&rdquo; or &ldquo;something from a gas station&rdquo;.
         </p>
@@ -165,7 +165,7 @@ export function HelperChat({
           Send
         </button>
       </form>
-      <p className="-mt-2 text-xs text-zinc-500">
+      <p className="-mt-2 text-xs text-muted">
         {requestsLeft === 0
           ? "No AI requests left today. They reset tomorrow."
           : `${requestsLeft} AI ${requestsLeft === 1 ? "request" : "requests"} left today.`}
@@ -320,7 +320,7 @@ function PlanCard({
             <li key={i} className="flex items-center justify-between gap-3 py-2">
               <div className="min-w-0 text-sm">
                 <p className="font-medium">{item.name}</p>
-                <p className="text-zinc-500 tabular-nums">
+                <p className="text-muted tabular-nums">
                   {formatPortion(item.grams, item.portionLabel, item.portionCount)}
                   {item.portionLabel && ` (${formatNumber(item.grams)} g)`} ·{" "}
                   {occasionLabel(item.occasion)}
@@ -330,7 +330,7 @@ function PlanCard({
                 type="button"
                 disabled={done || busy.has(i)}
                 onClick={() => void add(item, i)}
-                className="h-10 shrink-0 rounded-lg border border-emerald-600 px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:border-zinc-300 disabled:text-zinc-500 dark:text-emerald-400 dark:hover:bg-emerald-950"
+                className="h-10 shrink-0 rounded-lg border border-emerald-600 px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:border-zinc-300 disabled:text-muted dark:text-emerald-400 dark:hover:bg-emerald-950"
               >
                 {done ? "Added ✓" : busy.has(i) ? "Adding…" : "Add to log"}
               </button>
@@ -341,7 +341,7 @@ function PlanCard({
 
       {improved.length > 0 && (
         <div className="mt-3 text-sm">
-          <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          <h3 className="text-xs font-semibold tracking-wide text-muted uppercase">
             Gaps (eaten vs goal)
           </h3>
           <ul className="mt-1 tabular-nums">
@@ -382,7 +382,7 @@ function PlanCard({
       )}
 
       {plan.dropped.length > 0 && (
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-muted">
           Left out: {plan.dropped.map((d) => `${d.name} (${d.reason})`).join("; ")}
         </p>
       )}
