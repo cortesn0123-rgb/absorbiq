@@ -8,7 +8,7 @@ import { targetInput } from "@/lib/profile";
 import { loadTracking, requireProfile } from "@/lib/settings";
 import { NutrientSettings, type GoalItem } from "./NutrientSettings";
 
-export const metadata = { title: "Nutrients · Micronutrient Tracker" };
+export const metadata = { title: "Nutrients · AbsorbIQ" };
 
 export default function NutrientsPage() {
   return (

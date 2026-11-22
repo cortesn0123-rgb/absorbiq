@@ -40,7 +40,7 @@ import { FoodRow } from "./FoodRow";
 import { GoalRow } from "./GoalRow";
 import { WaterCard } from "./WaterCard";
 
-export const metadata = { title: "Day · Micronutrient Tracker" };
+export const metadata = { title: "Day · AbsorbIQ" };
 
 export default function DayPage({ searchParams }: PageProps<"/dashboard">) {
   return (

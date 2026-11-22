@@ -8,7 +8,7 @@ import { NUTRIENTS, isNutrientId } from "@/lib/nutrients/registry";
 import { requireProfile } from "@/lib/settings";
 import { HelperChat } from "./HelperChat";
 
-export const metadata = { title: "AI helper · Micronutrient Tracker" };
+export const metadata = { title: "AI helper · AbsorbIQ" };
 
 export default function HelperPage({ searchParams }: PageProps<"/helper">) {
   return (

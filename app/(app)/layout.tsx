@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-zinc-200 bg-background/90 px-4 backdrop-blur dark:border-zinc-800">
         {/* On phones the Dashboard link stands in for the logo, so the nav fits. */}
         <Link href="/home" className="hidden font-semibold tracking-tight sm:block">
-          Micronutrient
+          AbsorbIQ
         </Link>
         <nav className="-mx-2 flex min-w-0 items-center gap-0.5 overflow-x-auto px-2 sm:mx-0 sm:px-0">
           <Link

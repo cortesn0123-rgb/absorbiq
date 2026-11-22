@@ -14,7 +14,7 @@ import { trackedMicros, visibleNutrients } from "@/lib/nutrients/tracking";
 import { loadTracking, requireProfile } from "@/lib/settings";
 import { LogFood } from "./LogFood";
 
-export const metadata = { title: "Log food · Micronutrient Tracker" };
+export const metadata = { title: "Log food · AbsorbIQ" };
 
 export default function LogPage({ searchParams }: PageProps<"/log">) {
   return (

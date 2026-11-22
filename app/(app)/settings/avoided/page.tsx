@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { loadAvoidedFoods, requireProfile } from "@/lib/settings";
 import { AvoidedFoods } from "./AvoidedFoods";
 
-export const metadata = { title: "Foods to avoid · Micronutrient Tracker" };
+export const metadata = { title: "Foods to avoid · AbsorbIQ" };
 
 export default function AvoidedPage() {
   return (

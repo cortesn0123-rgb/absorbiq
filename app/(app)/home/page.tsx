@@ -31,7 +31,7 @@ import { HistoryChart } from "./HistoryChart";
 import { MacroCard } from "./MacroCard";
 import { MARKER_NOTE, NutrientBar } from "./NutrientBar";
 
-export const metadata = { title: "Dashboard · Micronutrient Tracker" };
+export const metadata = { title: "Dashboard · AbsorbIQ" };
 
 /** Days in the longest history view. */
 const HISTORY_DAYS = 30;

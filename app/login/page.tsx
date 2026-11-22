@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Sign in · Micronutrient Tracker" };
+export const metadata = { title: "Sign in · AbsorbIQ" };
 
 export default function LoginPage() {
   return (

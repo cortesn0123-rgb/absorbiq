@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Micronutrient Tracker",
+  title: "AbsorbIQ",
   description: "Track the nutrients you eat and estimate how much your body absorbs.",
 };
 

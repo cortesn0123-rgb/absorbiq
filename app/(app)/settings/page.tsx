@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Settings · Micronutrient Tracker" };
+export const metadata = { title: "Settings · AbsorbIQ" };
 
 const LINKS = [
   {

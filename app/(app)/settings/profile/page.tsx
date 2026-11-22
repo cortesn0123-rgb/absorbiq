@@ -4,7 +4,7 @@ import { ProfileForm } from "@/components/ProfileForm";
 import { requireProfile } from "@/lib/settings";
 import { saveProfile } from "../actions";
 
-export const metadata = { title: "Profile · Micronutrient Tracker" };
+export const metadata = { title: "Profile · AbsorbIQ" };
 
 export default function ProfilePage() {
   return (

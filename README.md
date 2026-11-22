@@ -1,4 +1,4 @@
-# Micronutrient Tracker
+# AbsorbIQ (micronutrient tracker)
 
 Track macro- and micronutrients from food, with estimated absorption. See `CLAUDE.md` for the full brief.
 
