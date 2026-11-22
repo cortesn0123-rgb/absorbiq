@@ -23,7 +23,7 @@ Checked and fine:
 
 | ID  | Finding                                                                                                                                            | Status                                                                                    |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| B1  | Low energy availability (`lib/nutrients/energy-availability.ts`, CLAUDE.md section 4) is implemented and tested but not shown anywhere in the app. | Open, added to the queue as its own task (it needs a UI decision on where the flag sits). |
+| B1  | Low energy availability (`lib/nutrients/energy-availability.ts`, CLAUDE.md section 4) is implemented and tested but not shown anywhere in the app. | Fixed: shown on the Day view for finished Athletic training days. |
 
 ## Dead code
 
