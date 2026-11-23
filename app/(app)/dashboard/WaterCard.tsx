@@ -42,16 +42,15 @@ export function WaterCard({
   return (
     <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Water</h2>
-        <p className="text-sm text-zinc-500 tabular-nums">
+        <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Water</h2>
+        <p className="text-sm text-muted tabular-nums">
           {foodWaterMl === null
             ? "No food water data"
             : `+ ${formatNumber(foodWaterMl)} mL from food${foodWaterPartial ? "*" : ""}`}
         </p>
       </div>
       <p className="mt-1 text-2xl font-semibold tabular-nums">
-        {formatNumber(drinksMl)}{" "}
-        <span className="text-base font-normal text-zinc-500">mL drunk</span>
+        {formatNumber(drinksMl)} <span className="text-base font-normal text-muted">mL drunk</span>
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -98,7 +97,7 @@ export function WaterCard({
             <button
               type="button"
               onClick={() => setCustom(null)}
-              className="h-11 px-2 text-sm text-zinc-500"
+              className="h-11 px-2 text-sm text-muted"
             >
               Cancel
             </button>

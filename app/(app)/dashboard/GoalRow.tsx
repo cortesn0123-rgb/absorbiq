@@ -34,12 +34,12 @@ export function GoalRow({ row }: { row: GoalRowData }) {
           <span className="min-w-0 flex-1">{row.name}</span>
           <span className="text-right tabular-nums">
             {row.consumed === null ? (
-              <span className="text-zinc-400 italic">no data</span>
+              <span className="text-muted italic">no data</span>
             ) : (
               formatAmount(row.consumed, row.unit)
             )}
             {row.partial && <span className="text-amber-600">*</span>}
-            <span className="text-zinc-500"> / {row.goalLabel}</span>
+            <span className="text-muted"> / {row.goalLabel}</span>
           </span>
         </span>
         <span
@@ -55,7 +55,7 @@ export function GoalRow({ row }: { row: GoalRowData }) {
             style={{ width: `${pct}%` }}
           />
         </span>
-        <span className="flex flex-wrap justify-between gap-x-3 text-xs text-zinc-500">
+        <span className="flex flex-wrap justify-between gap-x-3 text-xs text-muted">
           <span>
             {row.ratio !== null && `${Math.round(row.ratio * 100)}%`}
             {row.status === "over-limit" && (

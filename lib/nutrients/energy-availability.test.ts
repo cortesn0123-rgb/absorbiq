@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assessEnergyAvailability, fatFreeMass, type BodyInput } from "./energy-availability";
+import {
+  assessEnergyAvailability,
+  fatFreeMass,
+  lowEnergyAvailabilityFlag,
+  type BodyInput,
+} from "./energy-availability";
 import type { TrainingSession } from "./training";
 
 const woman: BodyInput = { sex: "female", weightKg: 60, heightCm: 165, bodyFatPct: 20 };
@@ -49,5 +54,22 @@ describe("assessEnergyAvailability", () => {
     });
     expect(ea.notes.join(" ")).toMatch(/Fat-free mass is estimated/);
     expect(ea.notes.join(" ")).toMatch(/Exercise calories are estimated/);
+  });
+});
+
+describe("lowEnergyAvailabilityFlag", () => {
+  const low = { ...woman, intakeKcal: 1600, sessions: hourHigh, athletic: true, dayComplete: true };
+
+  it("flags a finished, logged Athletic training day with low EA", () => {
+    expect(assessEnergyAvailability(low).low).toBe(true);
+    expect(lowEnergyAvailabilityFlag(low)?.low).toBe(true);
+  });
+
+  it("stays quiet otherwise", () => {
+    expect(lowEnergyAvailabilityFlag({ ...low, athletic: false })).toBeNull();
+    expect(lowEnergyAvailabilityFlag({ ...low, dayComplete: false })).toBeNull();
+    expect(lowEnergyAvailabilityFlag({ ...low, sessions: [] })).toBeNull();
+    expect(lowEnergyAvailabilityFlag({ ...low, intakeKcal: 0 })).toBeNull();
+    expect(lowEnergyAvailabilityFlag({ ...low, intakeKcal: 3000 })).toBeNull();
   });
 });

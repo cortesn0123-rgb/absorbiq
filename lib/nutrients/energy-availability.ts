@@ -83,3 +83,23 @@ export function assessEnergyAvailability(input: EnergyAvailabilityInput): Energy
   }
   return { kcalPerKgFfm, ffmKg: ffm.kg, exerciseKcal, low, notes };
 }
+
+export interface DayEnergyAvailabilityInput extends EnergyAvailabilityInput {
+  /** Only the Athletic tier gets this check. */
+  athletic: boolean;
+  /** The day is over (before today), so its food log is complete. */
+  dayComplete: boolean;
+}
+
+/**
+ * The Day view's low-EA flag: an assessment only for a finished, logged Athletic training day
+ * whose EA is low; otherwise null.
+ */
+export function lowEnergyAvailabilityFlag(
+  input: DayEnergyAvailabilityInput,
+): EnergyAvailability | null {
+  if (!input.athletic || !input.dayComplete || input.sessions.length === 0) return null;
+  if (input.intakeKcal <= 0) return null;
+  const ea = assessEnergyAvailability(input);
+  return ea.low ? ea : null;
+}

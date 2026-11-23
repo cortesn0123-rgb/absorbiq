@@ -7,11 +7,17 @@ import { loadProfile } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile } from "../settings/actions";
 
-export const metadata = { title: "Set up your profile · Micronutrient Tracker" };
+export const metadata = { title: "Set up your profile · AbsorbIQ" };
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Onboarding />
     </Suspense>
   );

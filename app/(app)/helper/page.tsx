@@ -8,11 +8,17 @@ import { NUTRIENTS, isNutrientId } from "@/lib/nutrients/registry";
 import { requireProfile } from "@/lib/settings";
 import { HelperChat } from "./HelperChat";
 
-export const metadata = { title: "AI helper · Micronutrient Tracker" };
+export const metadata = { title: "AI helper · AbsorbIQ" };
 
 export default function HelperPage({ searchParams }: PageProps<"/helper">) {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Helper searchParams={searchParams} />
     </Suspense>
   );
@@ -52,7 +58,7 @@ async function Helper({ searchParams }: Pick<PageProps<"/helper">, "searchParams
         autoStart={def !== null || ask === "1"}
         requestsLeft={Math.max(0, DAILY_REQUEST_LIMIT - (count ?? 0))}
       />
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted">
         Suggestions come from Claude (AI); every amount, gap and absorption figure is calculated by
         this app from USDA FoodData Central. {DISCLAIMER}
       </p>

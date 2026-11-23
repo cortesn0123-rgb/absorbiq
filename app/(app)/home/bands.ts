@@ -14,7 +14,7 @@ export const BAND_FILL: Record<Band, string> = {
 
 /** Text that stays readable on the band's fill (chart cells). */
 export const BAND_INK: Record<Band, string> = {
-  none: "text-zinc-500",
+  none: "text-muted",
   low: "text-zinc-950",
   partway: "text-zinc-950",
   met: "text-white",
@@ -26,7 +26,7 @@ export const BAND_INK: Record<Band, string> = {
 
 /** Text colour for the band's label next to a bar. */
 export const BAND_TEXT: Record<Band, string> = {
-  none: "text-zinc-500",
+  none: "text-muted",
   low: "text-orange-700 dark:text-orange-400",
   partway: "text-amber-700 dark:text-amber-400",
   met: "text-green-700 dark:text-green-400",

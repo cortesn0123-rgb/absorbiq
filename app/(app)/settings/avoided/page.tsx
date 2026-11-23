@@ -3,11 +3,17 @@ import { Suspense } from "react";
 import { loadAvoidedFoods, requireProfile } from "@/lib/settings";
 import { AvoidedFoods } from "./AvoidedFoods";
 
-export const metadata = { title: "Foods to avoid · Micronutrient Tracker" };
+export const metadata = { title: "Foods to avoid · AbsorbIQ" };
 
 export default function AvoidedPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p role="status" className="text-sm text-muted">
+          Loading…
+        </p>
+      }
+    >
       <Avoided />
     </Suspense>
   );

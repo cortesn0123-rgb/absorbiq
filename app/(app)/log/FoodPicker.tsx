@@ -41,7 +41,7 @@ export function FoodPicker({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold">{food.name}</h2>
-          {food.brand && <p className="text-sm text-zinc-500">{food.brand}</p>}
+          {food.brand && <p className="text-sm text-muted">{food.brand}</p>}
         </div>
         <button
           type="button"
@@ -60,7 +60,7 @@ export function FoodPicker({
       <div className="text-sm" aria-live="polite">
         {portion && amounts ? (
           <>
-            <span className="text-zinc-500">{formatNumber(portion.grams)} g · </span>
+            <span className="text-muted">{formatNumber(portion.grams)} g · </span>
             <MacroLine amounts={amounts} />
           </>
         ) : (

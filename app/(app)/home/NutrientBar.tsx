@@ -37,7 +37,7 @@ export function NutrientBar({
         <span className="min-w-0 flex-1">{row.name}</span>
         <span className="text-right tabular-nums">
           {row.consumed === null ? (
-            <span className="text-zinc-400 italic">no data</span>
+            <span className="text-muted italic">no data</span>
           ) : (
             formatAmount(row.consumed, row.unit)
           )}
@@ -46,7 +46,7 @@ export function NutrientBar({
               *
             </span>
           )}
-          <span className="text-zinc-500"> / {row.goalLabel}</span>
+          <span className="text-muted"> / {row.goalLabel}</span>
         </span>
       </div>
       <div className="relative mt-1">
@@ -70,7 +70,7 @@ export function NutrientBar({
           />
         )}
       </div>
-      <div className="mt-0.5 flex flex-wrap justify-between gap-x-3 text-xs text-zinc-500">
+      <div className="mt-0.5 flex flex-wrap justify-between gap-x-3 text-xs text-muted">
         <span>
           <span className={`font-medium ${BAND_TEXT[band]}`}>
             {OVER_BANDS.has(band) && "⚠ "}

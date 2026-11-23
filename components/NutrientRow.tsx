@@ -11,7 +11,7 @@ const ESTIMATE_NOTE =
 function Consumed({ value, unit }: { value: NutrientValue; unit: NutrientDefinition["unit"] }) {
   if (value.amount === null) {
     return (
-      <span className="text-zinc-400 italic" title="FoodData Central has no data for this">
+      <span className="text-muted italic" title="FoodData Central has no data for this">
         no data
       </span>
     );
@@ -31,14 +31,14 @@ function Consumed({ value, unit }: { value: NutrientValue; unit: NutrientDefinit
 /** "~X unit" with "range Y–Z" underneath; equal ends mean a single fixed factor. */
 function AbsorbedText({ value, unit }: { value: NutrientValue; unit: NutrientDefinition["unit"] }) {
   const e = value.estimate!;
-  if (e.basis === "as-eaten") return <span className="text-zinc-500">as eaten</span>;
+  if (e.basis === "as-eaten") return <span className="text-muted">as eaten</span>;
   const showRange =
     e.low !== null && e.high !== null && formatNumber(e.low) !== formatNumber(e.high);
   return (
     <span className="flex flex-col items-end leading-tight">
       <span>~{formatAmount(e.absorbed!, unit)}</span>
       {showRange && (
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-muted">
           range {formatNumber(e.low!)}–{formatNumber(e.high!)}
         </span>
       )}
@@ -66,7 +66,7 @@ export function NutrientRow({
   return (
     <div className="py-1">
       <div className="flex items-baseline justify-between gap-3">
-        <dt className={`min-w-0 flex-1 ${indented ? "pl-3 text-zinc-500" : ""}`}>{def.name}</dt>
+        <dt className={`min-w-0 flex-1 ${indented ? "pl-3 text-muted" : ""}`}>{def.name}</dt>
         <dd className="w-20 shrink-0 text-right tabular-nums">
           <Consumed value={value} unit={def.unit} />
         </dd>
@@ -84,7 +84,7 @@ export function NutrientRow({
                 <AbsorbedText value={value} unit={def.unit} />
               </button>
             ) : (
-              <span className="text-zinc-400">–</span>
+              <span className="text-muted">–</span>
             )}
           </dd>
         )}
@@ -100,7 +100,7 @@ export function NutrientRow({
               <li key={r}>{r}</li>
             ))}
           </ul>
-          <p className="mt-2 text-zinc-500">{ESTIMATE_NOTE}</p>
+          <p className="mt-2 text-muted">{ESTIMATE_NOTE}</p>
         </div>
       )}
     </div>

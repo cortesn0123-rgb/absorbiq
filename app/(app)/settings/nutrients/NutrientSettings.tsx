@@ -143,7 +143,7 @@ export function NutrientSettings({
             </button>
           ))}
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted">
           Tracking {optimisticTracked.length} of {MICRO_IDS.length} vitamins and minerals.
         </p>
       </section>
@@ -153,7 +153,7 @@ export function NutrientSettings({
           <h2 className="border-b border-zinc-200 pb-1 font-semibold dark:border-zinc-800">
             {title}
           </h2>
-          {note && <p className="pt-1 text-xs text-zinc-500">{note}</p>}
+          {note && <p className="pt-1 text-xs text-muted">{note}</p>}
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {items
               .filter((i) => i.category === category)
@@ -252,7 +252,7 @@ function NutrientGoalRow({
             )}
             {goalLabel(goal)}
           </span>
-          {range && <span className="text-xs text-zinc-500">{range}</span>}
+          {range && <span className="text-xs text-muted">{range}</span>}
         </button>
       </div>
 
@@ -292,7 +292,7 @@ function NutrientGoalRow({
               onChange={(e) => setDraft(e.target.value)}
               className="h-10 w-full min-w-0 rounded-lg border border-zinc-300 bg-background px-3 text-base dark:border-zinc-700"
             />
-            <span className="text-sm text-zinc-500">
+            <span className="text-sm text-muted">
               {goal.unit}
               {goal.per === "meal" ? " per meal" : ""}
             </span>

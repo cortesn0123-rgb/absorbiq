@@ -33,7 +33,7 @@ export function HistoryChart({ dates, rows }: { dates: string[]; rows: HistoryRo
   return (
     <section className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+        <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">
           % of goal by day
         </h2>
         <div role="group" aria-label="Range" className="flex gap-1">
@@ -52,7 +52,7 @@ export function HistoryChart({ dates, rows }: { dates: string[]; rows: HistoryRo
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-3 text-sm text-zinc-500">No tracked nutrients with a goal.</p>
+        <p className="py-3 text-sm text-muted">No tracked nutrients with a goal.</p>
       ) : (
         <div
           className="mt-3 grid items-center gap-x-px gap-y-0.5 text-xs"
@@ -64,7 +64,7 @@ export function HistoryChart({ dates, rows }: { dates: string[]; rows: HistoryRo
               key={d}
               href={`/dashboard?date=${d}`}
               title={`Open ${monthDay.format(utc(d))} in the Day view`}
-              className="flex h-6 items-center justify-center text-[10px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+              className="flex h-6 items-center justify-center text-[10px] text-muted hover:text-zinc-900 dark:hover:text-zinc-100"
             >
               {showText
                 ? weekday.format(utc(d))
@@ -98,7 +98,7 @@ export function HistoryChart({ dates, rows }: { dates: string[]; rows: HistoryRo
               ` (${Math.round(rows[pick.row].cells[pick.day].ratio! * 100)}%, ${BAND_LABELS[rows[pick.row].cells[pick.day].band]})`}
           </>
         ) : (
-          <span className="text-zinc-500">Tap a square for the amounts, or a day to open it.</span>
+          <span className="text-muted">Tap a square for the amounts, or a day to open it.</span>
         )}
       </p>
 
@@ -118,7 +118,7 @@ export function HistoryChart({ dates, rows }: { dates: string[]; rows: HistoryRo
           Nothing logged
         </li>
       </ul>
-      <p className="mt-2 text-xs text-zinc-500">
+      <p className="mt-2 text-xs text-muted">
         Based on what you ate (consumed), the same as the Day view. Added sugars use your highest
         meal of the day.
       </p>

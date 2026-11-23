@@ -17,7 +17,7 @@ export function ScoreValue({
     <>
       ~{formatNumber(score.value)}
       {range && score.low !== null && score.high !== null && (
-        <span className="text-zinc-400">
+        <span className="text-muted">
           {" "}
           ({formatNumber(score.low)}–{formatNumber(score.high)})
         </span>

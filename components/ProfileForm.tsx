@@ -55,7 +55,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <label className="flex flex-col gap-1">
       <span className="text-sm font-medium">{label}</span>
       {children}
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs text-muted">{hint}</span>}
     </label>
   );
 }
@@ -93,7 +93,7 @@ function Choice<T extends string>({
           />
           <span className="flex flex-col">
             <span>{o.label}</span>
-            {o.description && <span className="text-xs text-zinc-500">{o.description}</span>}
+            {o.description && <span className="text-xs text-muted">{o.description}</span>}
           </span>
         </label>
       ))}
@@ -145,7 +145,7 @@ export function ProfileForm({
 
       <fieldset>
         <legend className={legendClass}>Sex</legend>
-        <p className="mb-2 text-xs text-zinc-500">
+        <p className="mb-2 text-xs text-muted">
           Used to pick the right National Academies reference values.
         </p>
         <Choice
@@ -284,7 +284,7 @@ export function ProfileForm({
 
       <fieldset>
         <legend className={legendClass}>Activity level</legend>
-        <p className="mb-2 text-xs text-zinc-500">Your usual day, including exercise.</p>
+        <p className="mb-2 text-xs text-muted">Your usual day, including exercise.</p>
         <Choice name="activity_level" value={profile.activityLevel} options={ACTIVITY_OPTIONS} />
       </fieldset>
 

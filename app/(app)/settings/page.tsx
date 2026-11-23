@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Settings · Micronutrient Tracker" };
+export const metadata = { title: "Settings · AbsorbIQ" };
 
 const LINKS = [
   {
@@ -18,6 +18,16 @@ const LINKS = [
     title: "Foods to avoid",
     description: "Foods the AI helper leaves out of its suggestions.",
   },
+  {
+    href: "/settings/export",
+    title: "Export data",
+    description: "Download what you ate and absorbed as a CSV file.",
+  },
+  {
+    href: "/about/absorption",
+    title: "About absorption",
+    description: "How the absorbed estimates work, and their limits.",
+  },
 ];
 
 export default function SettingsPage() {
@@ -33,9 +43,9 @@ export default function SettingsPage() {
             >
               <span className="flex flex-col">
                 <span className="font-medium">{l.title}</span>
-                <span className="text-sm text-zinc-500">{l.description}</span>
+                <span className="text-sm text-muted">{l.description}</span>
               </span>
-              <span aria-hidden className="text-zinc-400">
+              <span aria-hidden className="text-muted">
                 ›
               </span>
             </Link>
